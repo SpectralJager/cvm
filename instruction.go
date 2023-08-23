@@ -26,8 +26,21 @@ const (
 	OP_JUMPC
 	OP_JUMPNC
 
-	OP_BLOCK
-	OP_END
+	OP_BLOCK_START
+	OP_BLOCK_END
+	OP_BLOCK_BR
+	OP_BLOCK_LOAD
+	OP_BLOCK_SAVE
+
+	OP_LOAD
+	OP_SAVE
+	OP_NEW
+
+	OP_FUNC_CALL
+	OP_FUNC_RET
+
+	OP_LOCAL_LOAD
+	OP_LOCAL_SAVE
 )
 
 var instrKindString = map[byte]string{
@@ -49,8 +62,21 @@ var instrKindString = map[byte]string{
 	OP_JUMPC:  "jumpc",
 	OP_JUMPNC: "jumpnc",
 
-	OP_BLOCK: "block",
-	OP_END:   "end",
+	OP_BLOCK_START: "block.block",
+	OP_BLOCK_END:   "block.end",
+	OP_BLOCK_BR:    "block.br",
+	OP_BLOCK_LOAD:  "block.load",
+	OP_BLOCK_SAVE:  "block.save",
+
+	OP_LOAD: "load",
+	OP_NEW:  "new",
+	OP_SAVE: "save",
+
+	OP_FUNC_CALL: "func.call",
+	OP_FUNC_RET:  "func.ret",
+
+	OP_LOCAL_LOAD: "local.load",
+	OP_LOCAL_SAVE: "local.save",
 }
 
 var (
@@ -128,9 +154,68 @@ func JumpNC(x uint32) Instruction {
 	buf = binary.LittleEndian.AppendUint32(buf, uint32(x))
 	return Instruction{Kind: OP_JUMPNC, Operands: buf}
 }
-func Block() Instruction {
-	return Instruction{Kind: OP_BLOCK}
+func BlockStart(x uint32) Instruction {
+	buf := make([]byte, 0, 5)
+	buf = append(buf, TAG_I32)
+	buf = binary.LittleEndian.AppendUint32(buf, uint32(x))
+	return Instruction{Kind: OP_BLOCK_START, Operands: buf}
 }
-func End() Instruction {
-	return Instruction{Kind: OP_BLOCK}
+func BlockEnd() Instruction {
+	return Instruction{Kind: OP_BLOCK_END}
+}
+func BlockBr() Instruction {
+	return Instruction{Kind: OP_BLOCK_BR}
+}
+func BlockLoad(x uint32) Instruction {
+	buf := make([]byte, 0, 5)
+	buf = append(buf, TAG_I32)
+	buf = binary.LittleEndian.AppendUint32(buf, uint32(x))
+	return Instruction{Kind: OP_BLOCK_LOAD, Operands: buf}
+}
+func BlockSave(x uint32) Instruction {
+	buf := make([]byte, 0, 5)
+	buf = append(buf, TAG_I32)
+	buf = binary.LittleEndian.AppendUint32(buf, uint32(x))
+	return Instruction{Kind: OP_BLOCK_SAVE, Operands: buf}
+}
+func LocalLoad(x uint32) Instruction {
+	buf := make([]byte, 0, 5)
+	buf = append(buf, TAG_I32)
+	buf = binary.LittleEndian.AppendUint32(buf, uint32(x))
+	return Instruction{Kind: OP_LOCAL_LOAD, Operands: buf}
+}
+func LocalSave(x uint32) Instruction {
+	buf := make([]byte, 0, 5)
+	buf = append(buf, TAG_I32)
+	buf = binary.LittleEndian.AppendUint32(buf, uint32(x))
+	return Instruction{Kind: OP_LOCAL_SAVE, Operands: buf}
+}
+func Load(x uint32) Instruction {
+	buf := make([]byte, 0, 5)
+	buf = append(buf, TAG_I32)
+	buf = binary.LittleEndian.AppendUint32(buf, uint32(x))
+	return Instruction{Kind: OP_LOAD, Operands: buf}
+}
+func Save(x uint32) Instruction {
+	buf := make([]byte, 0, 5)
+	buf = append(buf, TAG_I32)
+	buf = binary.LittleEndian.AppendUint32(buf, uint32(x))
+	return Instruction{Kind: OP_SAVE, Operands: buf}
+}
+func New() Instruction {
+	return Instruction{Kind: OP_NEW}
+}
+func FuncCall(addr uint32, args uint32) Instruction {
+	buf := make([]byte, 0, 10)
+	buf = append(buf, TAG_I32)
+	buf = binary.LittleEndian.AppendUint32(buf, addr)
+	buf = append(buf, TAG_I32)
+	buf = binary.LittleEndian.AppendUint32(buf, args)
+	return Instruction{Kind: OP_FUNC_CALL, Operands: buf}
+}
+func FuncRet(x uint32) Instruction {
+	buf := make([]byte, 0, 5)
+	buf = append(buf, TAG_I32)
+	buf = binary.LittleEndian.AppendUint32(buf, x)
+	return Instruction{Kind: OP_FUNC_RET, Operands: buf}
 }

@@ -23,7 +23,7 @@ func (o *CVMObject) ToI32() int32 {
 	if o.Tag != TAG_I32 {
 		return 0
 	}
-	val := binary.LittleEndian.Uint32(o.Value)
+	val := binary.LittleEndian.Uint32(o.Value[:4])
 	return int32(val)
 }
 func (o *CVMObject) ToBool() bool {
