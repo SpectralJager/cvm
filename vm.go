@@ -127,6 +127,18 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 				return err
 			}
 			vm.Push(ctx, obj)
+		case OP_I32_NEG:
+			ip++
+			obj, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			resVal := -obj.ToI32()
+			resObj, err := CreateI32Object(resVal)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
 		case OP_I32_ADD:
 			ip++
 			obj2, err := vm.Pop(ctx)
@@ -270,6 +282,78 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 			}
 			res := obj1.ToI32() == obj2.ToI32()
 			resObj, err := CreateBool(res)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
+		case OP_BOOL_LOAD:
+			ip++
+			obj, err := CreateBool(instr.Operands)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, obj)
+		case OP_BOOL_NOT:
+			ip++
+			obj, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			resVal := !obj.ToBool()
+			resObj, err := CreateBool(resVal)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
+		case OP_BOOL_AND:
+			ip++
+			obj2, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			obj1, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			resVal := obj1.ToBool() && obj2.ToBool()
+			resObj, err := CreateBool(resVal)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
+		case OP_BOOL_OR:
+			ip++
+			obj2, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			obj1, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			resVal := obj1.ToBool() || obj2.ToBool()
+			resObj, err := CreateBool(resVal)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
+		case OP_BOOL_XOR:
+			ip++
+			obj2, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			obj1, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			resVal := false
+			b1 := obj1.ToBool()
+			b2 := obj2.ToBool()
+			if b1 != b2 && (b1 == true || b2 == true) {
+				resVal = true
+			}
+			resObj, err := CreateBool(resVal)
 			if err != nil {
 				return err
 			}

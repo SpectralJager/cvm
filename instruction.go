@@ -12,6 +12,7 @@ const (
 	OP_HALT
 
 	OP_I32_LOAD
+	OP_I32_NEG
 	OP_I32_ADD
 	OP_I32_SUB
 	OP_I32_MUL
@@ -21,6 +22,12 @@ const (
 	OP_I32_LEQ
 	OP_I32_GEQ
 	OP_I32_EQ
+
+	OP_BOOL_LOAD
+	OP_BOOL_AND
+	OP_BOOL_OR
+	OP_BOOL_NOT
+	OP_BOOL_XOR
 
 	OP_JUMP
 	OP_JUMPC
@@ -48,6 +55,7 @@ var instrKindString = map[byte]string{
 	OP_HALT: "halt",
 
 	OP_I32_LOAD: "i32.load",
+	OP_I32_NEG:  "i32.neg",
 	OP_I32_ADD:  "i32.add",
 	OP_I32_SUB:  "i32.sub",
 	OP_I32_MUL:  "i32.mul",
@@ -57,6 +65,12 @@ var instrKindString = map[byte]string{
 	OP_I32_LEQ:  "i32.leq",
 	OP_I32_GEQ:  "i32.geq",
 	OP_I32_EQ:   "i32.eq",
+
+	OP_BOOL_LOAD: "bool.load",
+	OP_BOOL_NOT:  "bool.not",
+	OP_BOOL_AND:  "bool.and",
+	OP_BOOL_OR:   "bool.or",
+	OP_BOOL_XOR:  "bool.xor",
 
 	OP_JUMP:   "jump",
 	OP_JUMPC:  "jumpc",
@@ -98,6 +112,12 @@ func (i *Instruction) String() string {
 			panic(err)
 		}
 		fmt.Fprintf(&buf, " %s", obj.String())
+	case OP_BOOL_LOAD:
+		obj, err := CreateBool(i.Operands)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Fprintf(&buf, " %s", obj.String())
 	case OP_JUMP, OP_JUMPC, OP_JUMPNC, OP_BLOCK_START, OP_FUNC_CALL:
 		obj, err := CreateI32Object(i.Operands[:4])
 		if err != nil {
@@ -126,6 +146,9 @@ func I32Load(x int32) Instruction {
 	buf = binary.LittleEndian.AppendUint32(buf, uint32(x))
 	return Instruction{Kind: OP_I32_LOAD, Operands: buf}
 }
+func I32Neg() Instruction {
+	return Instruction{Kind: OP_I32_NEG}
+}
 func I32Add() Instruction {
 	return Instruction{Kind: OP_I32_ADD}
 }
@@ -152,6 +175,28 @@ func I32Geq() Instruction {
 }
 func I32Eq() Instruction {
 	return Instruction{Kind: OP_I32_EQ}
+}
+func BoolLoad(x bool) Instruction {
+	buf := make([]byte, 0, 2)
+	buf = append(buf, TAG_BOOL)
+	if x {
+		buf = append(buf, 1)
+	} else {
+		buf = append(buf, 0)
+	}
+	return Instruction{Kind: OP_BOOL_LOAD, Operands: buf}
+}
+func BoolNot() Instruction {
+	return Instruction{Kind: OP_BOOL_NOT}
+}
+func BoolAnd() Instruction {
+	return Instruction{Kind: OP_BOOL_AND}
+}
+func BoolOr() Instruction {
+	return Instruction{Kind: OP_BOOL_OR}
+}
+func BoolXor() Instruction {
+	return Instruction{Kind: OP_BOOL_XOR}
 }
 func Jump(x uint32) Instruction {
 	buf := make([]byte, 0, 5)

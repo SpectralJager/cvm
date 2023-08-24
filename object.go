@@ -18,11 +18,11 @@ type CVMObject struct {
 func (o *CVMObject) String() string {
 	switch o.Tag {
 	case TAG_I32:
-		return fmt.Sprintf("int.%d", o.ToI32())
+		return fmt.Sprintf("(i32)%d", o.ToI32())
 	case TAG_BOOL:
-		return fmt.Sprintf("bool.%v", o.ToBool())
+		return fmt.Sprintf("(bool)%v", o.ToBool())
 	default:
-		return fmt.Sprintf("unknown.%v", o.Value)
+		return fmt.Sprintf("(unknown)%v", o.Value)
 	}
 }
 
