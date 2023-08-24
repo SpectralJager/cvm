@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"runtime/pprof"
 )
 
 type Frame struct {
@@ -19,7 +21,7 @@ func (f *Frame) String() string {
 
 func main() {
 	instrs := []Instruction{
-		I32Load(47),
+		I32Load(40),
 		FuncCall(4, 1),
 		New(),
 		Halt(),
@@ -53,17 +55,17 @@ func main() {
 		Heap:       make([]CVMObject, 0, 2048),
 		StackFrame: make([]Frame, 0, 256),
 	}
-	// fl, err := os.Create("fib.prof")
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// pprof.StartCPUProfile(fl)
-	err := vm.Execute(context.TODO(), instrs)
+	fl, err := os.Create("fib.prof")
+	if err != nil {
+		panic(err)
+	}
+	pprof.StartCPUProfile(fl)
+	err = vm.Execute(context.TODO(), instrs)
 	if err != nil {
 		if !errors.Is(err, ErrReachHalt) {
 			panic(err)
 		}
 	}
-	// pprof.StopCPUProfile()
+	pprof.StopCPUProfile()
 	fmt.Println(vm.Trace())
 }
