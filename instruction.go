@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"math"
 )
 
 const (
@@ -22,12 +23,28 @@ const (
 	OP_I32_LEQ
 	OP_I32_GEQ
 	OP_I32_EQ
+	OP_I32_TO_F32
+	OP_I32_TO_BOOL
 
 	OP_BOOL_LOAD
 	OP_BOOL_AND
 	OP_BOOL_OR
 	OP_BOOL_NOT
 	OP_BOOL_XOR
+
+	OP_F32_LOAD
+	OP_F32_NEG
+	OP_F32_ADD
+	OP_F32_SUB
+	OP_F32_MUL
+	OP_F32_DIV
+	OP_F32_LT
+	OP_F32_GT
+	OP_F32_LEQ
+	OP_F32_GEQ
+	OP_F32_EQ
+	OP_F32_TO_I32
+	OP_F32_TO_BOOL
 
 	OP_JUMP
 	OP_JUMPC
@@ -54,23 +71,39 @@ var instrKindString = map[byte]string{
 	OP_NULL: "null",
 	OP_HALT: "halt",
 
-	OP_I32_LOAD: "i32.load",
-	OP_I32_NEG:  "i32.neg",
-	OP_I32_ADD:  "i32.add",
-	OP_I32_SUB:  "i32.sub",
-	OP_I32_MUL:  "i32.mul",
-	OP_I32_DIV:  "i32.div",
-	OP_I32_LT:   "i32.lt",
-	OP_I32_GT:   "i32.gt",
-	OP_I32_LEQ:  "i32.leq",
-	OP_I32_GEQ:  "i32.geq",
-	OP_I32_EQ:   "i32.eq",
+	OP_I32_LOAD:    "i32.load",
+	OP_I32_NEG:     "i32.neg",
+	OP_I32_ADD:     "i32.add",
+	OP_I32_SUB:     "i32.sub",
+	OP_I32_MUL:     "i32.mul",
+	OP_I32_DIV:     "i32.div",
+	OP_I32_LT:      "i32.lt",
+	OP_I32_GT:      "i32.gt",
+	OP_I32_LEQ:     "i32.leq",
+	OP_I32_GEQ:     "i32.geq",
+	OP_I32_EQ:      "i32.eq",
+	OP_I32_TO_F32:  "i32.to_f32",
+	OP_I32_TO_BOOL: "i32.to_bool",
 
 	OP_BOOL_LOAD: "bool.load",
 	OP_BOOL_NOT:  "bool.not",
 	OP_BOOL_AND:  "bool.and",
 	OP_BOOL_OR:   "bool.or",
 	OP_BOOL_XOR:  "bool.xor",
+
+	OP_F32_LOAD:    "f32.load",
+	OP_F32_NEG:     "f32.neg",
+	OP_F32_ADD:     "f32.add",
+	OP_F32_SUB:     "f32.sub",
+	OP_F32_MUL:     "f32.mul",
+	OP_F32_DIV:     "f32.div",
+	OP_F32_LT:      "f32.lt",
+	OP_F32_GT:      "f32.gt",
+	OP_F32_LEQ:     "f32.leq",
+	OP_F32_GEQ:     "f32.geq",
+	OP_F32_EQ:      "f32.eq",
+	OP_F32_TO_I32:  "f32.to_i32",
+	OP_F32_TO_BOOL: "f32.to_bool",
 
 	OP_JUMP:   "jump",
 	OP_JUMPC:  "jumpc",
@@ -114,6 +147,12 @@ func (i *Instruction) String() string {
 		fmt.Fprintf(&buf, " %s", obj.String())
 	case OP_BOOL_LOAD:
 		obj, err := CreateBool(i.Operands)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Fprintf(&buf, " %s", obj.String())
+	case OP_F32_LOAD:
+		obj, err := CreateF32(i.Operands)
 		if err != nil {
 			panic(err)
 		}
@@ -176,6 +215,12 @@ func I32Geq() Instruction {
 func I32Eq() Instruction {
 	return Instruction{Kind: OP_I32_EQ}
 }
+func I32ToF32() Instruction {
+	return Instruction{Kind: OP_I32_TO_F32}
+}
+func I32ToBool() Instruction {
+	return Instruction{Kind: OP_I32_TO_BOOL}
+}
 func BoolLoad(x bool) Instruction {
 	buf := make([]byte, 0, 2)
 	buf = append(buf, TAG_BOOL)
@@ -197,6 +242,48 @@ func BoolOr() Instruction {
 }
 func BoolXor() Instruction {
 	return Instruction{Kind: OP_BOOL_XOR}
+}
+func F32Load(x float32) Instruction {
+	buf := make([]byte, 0, 5)
+	buf = append(buf, TAG_F32)
+	buf = binary.LittleEndian.AppendUint32(buf, math.Float32bits(x))
+	return Instruction{Kind: OP_F32_LOAD, Operands: buf}
+}
+func F32Neg() Instruction {
+	return Instruction{Kind: OP_F32_NEG}
+}
+func F32Add() Instruction {
+	return Instruction{Kind: OP_F32_ADD}
+}
+func F32Sub() Instruction {
+	return Instruction{Kind: OP_F32_SUB}
+}
+func F32Mul() Instruction {
+	return Instruction{Kind: OP_F32_MUL}
+}
+func F32Div() Instruction {
+	return Instruction{Kind: OP_F32_DIV}
+}
+func F32Lt() Instruction {
+	return Instruction{Kind: OP_F32_LT}
+}
+func F32Gt() Instruction {
+	return Instruction{Kind: OP_F32_GT}
+}
+func F32Leq() Instruction {
+	return Instruction{Kind: OP_F32_LEQ}
+}
+func F32Geq() Instruction {
+	return Instruction{Kind: OP_F32_GEQ}
+}
+func F32Eq() Instruction {
+	return Instruction{Kind: OP_F32_EQ}
+}
+func F32ToI32() Instruction {
+	return Instruction{Kind: OP_F32_TO_I32}
+}
+func F32ToBool() Instruction {
+	return Instruction{Kind: OP_F32_TO_BOOL}
 }
 func Jump(x uint32) Instruction {
 	buf := make([]byte, 0, 5)

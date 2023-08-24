@@ -286,6 +286,30 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 				return err
 			}
 			vm.Push(ctx, resObj)
+		case OP_I32_TO_F32:
+			ip++
+			obj, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			resVal := obj.I32ToF32()
+			resObj, err := CreateF32(resVal)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
+		case OP_I32_TO_BOOL:
+			ip++
+			obj, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			resVal := obj.I32ToBool()
+			resObj, err := CreateBool(resVal)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
 		case OP_BOOL_LOAD:
 			ip++
 			obj, err := CreateBool(instr.Operands)
@@ -353,6 +377,196 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 			if b1 != b2 && (b1 == true || b2 == true) {
 				resVal = true
 			}
+			resObj, err := CreateBool(resVal)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
+		case OP_F32_LOAD:
+			ip++
+			obj, err := CreateF32(instr.Operands)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, obj)
+		case OP_F32_NEG:
+			ip++
+			obj, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			resVal := -obj.ToF32()
+			resObj, err := CreateF32(resVal)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
+		case OP_F32_ADD:
+			ip++
+			obj2, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			obj1, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			resVal := obj1.ToF32() + obj2.ToF32()
+			resObj, err := CreateF32(resVal)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
+		case OP_F32_SUB:
+			ip++
+			obj2, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			obj1, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			resVal := obj1.ToF32() - obj2.ToF32()
+			resObj, err := CreateF32(resVal)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
+		case OP_F32_MUL:
+			ip++
+			obj2, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			obj1, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			resVal := obj1.ToF32() * obj2.ToF32()
+			resObj, err := CreateF32(resVal)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
+		case OP_F32_DIV:
+			ip++
+			obj2, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			obj1, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			if obj2.ToF32() == 0.0 {
+				return fmt.Errorf("division by zero")
+			}
+			resVal := obj1.ToF32() / obj2.ToF32()
+			resObj, err := CreateF32(resVal)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
+		case OP_F32_LT:
+			ip++
+			obj2, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			obj1, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			res := obj1.ToF32() < obj2.ToF32()
+			resObj, err := CreateBool(res)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
+		case OP_F32_GT:
+			ip++
+			obj2, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			obj1, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			res := obj1.ToF32() > obj2.ToF32()
+			resObj, err := CreateBool(res)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
+		case OP_F32_LEQ:
+			ip++
+			obj2, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			obj1, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			res := obj1.ToF32() <= obj2.ToF32()
+			resObj, err := CreateBool(res)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
+		case OP_F32_GEQ:
+			ip++
+			obj2, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			obj1, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			res := obj1.ToF32() >= obj2.ToF32()
+			resObj, err := CreateBool(res)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
+		case OP_F32_EQ:
+			ip++
+			obj2, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			obj1, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			res := obj1.ToF32() == obj2.ToF32()
+			resObj, err := CreateBool(res)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
+		case OP_F32_TO_I32:
+			ip++
+			obj, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			resVal := obj.F32ToI32()
+			resObj, err := CreateI32Object(resVal)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
+		case OP_F32_TO_BOOL:
+			ip++
+			obj, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			resVal := obj.F32ToBool()
 			resObj, err := CreateBool(resVal)
 			if err != nil {
 				return err

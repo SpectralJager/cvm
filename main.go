@@ -10,6 +10,9 @@ import (
 
 func main() {
 	instrs := []Instruction{
+		F32Load(12.2),
+		F32ToI32(),
+		I32ToF32(),
 		Halt(),
 	}
 	for i, instr := range instrs {
