@@ -21,7 +21,7 @@ func (f *Frame) String() string {
 
 func main() {
 	instrs := []Instruction{
-		I32Load(40),
+		I32Load(20),
 		FuncCall(4, 1),
 		New(),
 		Halt(),
@@ -50,11 +50,7 @@ func main() {
 		fmt.Printf("%04d: %s\n", i, instr.String())
 	}
 	fmt.Println()
-	vm := CVM{
-		Stack:      make([]CVMObject, 0, 1024),
-		Heap:       make([]CVMObject, 0, 2048),
-		StackFrame: make([]Frame, 0, 256),
-	}
+	vm := CVM{}
 	fl, err := os.Create("fib.prof")
 	if err != nil {
 		panic(err)

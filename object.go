@@ -16,7 +16,14 @@ type CVMObject struct {
 }
 
 func (o *CVMObject) String() string {
-	return fmt.Sprintf("%02x.%v", o.Tag, o.Value)
+	switch o.Tag {
+	case TAG_I32:
+		return fmt.Sprintf("int.%d", o.ToI32())
+	case TAG_BOOL:
+		return fmt.Sprintf("bool.%v", o.ToBool())
+	default:
+		return fmt.Sprintf("unknown.%v", o.Value)
+	}
 }
 
 func (o *CVMObject) ToI32() int32 {
@@ -35,6 +42,7 @@ func (o *CVMObject) ToBool() bool {
 
 func CreateI32Object[T []byte | int32](val T) (CVMObject, error) {
 	var obj CVMObject
+	obj.Value = nil
 	switch val := any(val).(type) {
 	case []byte:
 		obj.Tag = val[0]
@@ -50,6 +58,7 @@ func CreateI32Object[T []byte | int32](val T) (CVMObject, error) {
 }
 func CreateBool[T []byte | bool](val T) (CVMObject, error) {
 	var obj CVMObject
+	obj.Value = nil
 	switch val := any(val).(type) {
 	case []byte:
 		obj.Tag = val[0]

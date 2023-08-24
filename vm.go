@@ -6,24 +6,35 @@ import (
 	"fmt"
 )
 
+const (
+	STACK_SIZE       = 2048
+	HEAP_SIZE        = 2048
+	STACK_FRAME_SIZE = 2048
+)
+
 type CVM struct {
-	Stack      []CVMObject
-	Heap       []CVMObject
-	StackFrame []Frame
+	Stack      [STACK_SIZE]CVMObject
+	Heap       [HEAP_SIZE]CVMObject
+	StackFrame [STACK_FRAME_SIZE]Frame
+	SP, HP, FP uint
 }
 
-func (vm *CVM) New(ctx context.Context, obj CVMObject) (uint32, error) {
-	vm.Heap = append(vm.Heap, obj)
-	return uint32(len(vm.Heap) - 1), nil
+func (vm *CVM) New(ctx context.Context, obj CVMObject) error {
+	if vm.HP >= HEAP_SIZE {
+		return fmt.Errorf("heap overflow")
+	}
+	vm.Heap[vm.HP] = obj
+	vm.HP++
+	return nil
 }
 func (vm *CVM) Load(ctx context.Context, ind uint32) (CVMObject, error) {
-	if uint32(len(vm.Heap)) <= ind {
+	if uint32(vm.HP) < ind {
 		return CVMObject{}, fmt.Errorf("symbol with index %d not found", ind)
 	}
 	return vm.Heap[ind], nil
 }
 func (vm *CVM) Save(ctx context.Context, ind uint32, obj CVMObject) error {
-	if uint32(len(vm.Heap)) <= ind {
+	if uint32(vm.HP) < ind {
 		return fmt.Errorf("symbol with index %d not found", ind)
 	}
 	if vm.Heap[ind].Tag != obj.Tag {
@@ -35,7 +46,7 @@ func (vm *CVM) Save(ctx context.Context, ind uint32, obj CVMObject) error {
 
 func (vm *CVM) LastFuncFrame(ctx context.Context) (Frame, error) {
 	var fr Frame
-	for i := len(vm.StackFrame) - 1; i >= 0; i-- {
+	for i := vm.FP - 1; i >= 0; i-- {
 		fr = vm.StackFrame[i]
 		if fr.FrameOffset != -1 {
 			break
@@ -47,48 +58,56 @@ func (vm *CVM) LastFuncFrame(ctx context.Context) (Frame, error) {
 	return fr, nil
 }
 func (vm *CVM) LastFrame(ctx context.Context) (Frame, error) {
-	if len(vm.StackFrame) == 0 {
+	if vm.FP == 0 {
 		return Frame{}, fmt.Errorf("empty StackFrame")
 	}
 	return vm.StackFrame[len(vm.StackFrame)-1], nil
 }
 func (vm *CVM) PushFrame(ctx context.Context, fr Frame) error {
-	vm.StackFrame = append(vm.StackFrame, fr)
+	if vm.FP >= STACK_FRAME_SIZE {
+		return fmt.Errorf("stack frame overflow")
+	}
+	vm.StackFrame[vm.FP] = fr
+	vm.FP++
 	return nil
 }
 func (vm *CVM) PopFrame(ctx context.Context) (Frame, error) {
-	if len(vm.StackFrame) == 0 {
+	if vm.FP == 0 {
 		return Frame{}, fmt.Errorf("cant pop, stackFrame is empty")
 	}
-	fr := vm.StackFrame[len(vm.StackFrame)-1]
-	vm.StackFrame = vm.StackFrame[:len(vm.StackFrame)-1]
+	vm.FP--
+	fr := vm.StackFrame[vm.FP]
 	return fr, nil
 }
 func (vm *CVM) Push(ctx context.Context, obj CVMObject) error {
-	vm.Stack = append(vm.Stack, obj)
+	if vm.SP >= STACK_SIZE {
+		return fmt.Errorf("stack overflow")
+	}
+	vm.Stack[vm.SP] = obj
+	vm.SP++
 	return nil
 }
 func (vm *CVM) Pop(ctx context.Context) (CVMObject, error) {
-	if len(vm.Stack) == 0 {
-		return CVMObject{}, fmt.Errorf("cant pop, stack is empty")
+	if vm.SP == 0 {
+		return CVMObject{}, fmt.Errorf("stack is empty")
 	}
-	obj := vm.Stack[len(vm.Stack)-1]
-	vm.Stack = vm.Stack[:len(vm.Stack)-1]
+	vm.SP--
+	obj := vm.Stack[vm.SP]
 	return obj, nil
 }
 func (vm *CVM) Trace() string {
 	var buf bytes.Buffer
 	fmt.Fprint(&buf, "=== Heap:\n")
-	for i, obj := range vm.Heap {
-		fmt.Fprintf(&buf, "\t$%03d -> %s\n", i, obj.String())
+	for i := 0; i < int(vm.HP); i++ {
+		fmt.Fprintf(&buf, "\t$%03d -> %s\n", i, vm.Heap[i].String())
 	}
 	fmt.Fprint(&buf, "=== StackFrace:\n")
-	for i, fr := range vm.StackFrame {
-		fmt.Fprintf(&buf, "\t$%03d -> %s\n", i, fr.String())
+	for i := 0; i < int(vm.FP); i++ {
+		fmt.Fprintf(&buf, "\t$%03d -> %s\n", i, vm.StackFrame[i].String())
 	}
 	fmt.Fprint(&buf, "=== Stack:\n")
-	for i, obj := range vm.Stack {
-		fmt.Fprintf(&buf, "\t$%03d -> %s\n", i, obj.String())
+	for i := 0; i < int(vm.SP); i++ {
+		fmt.Fprintf(&buf, "\t$%03d -> %s\n", i, vm.Stack[i].String())
 	}
 	return buf.String()
 }
@@ -119,7 +138,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 				return err
 			}
 			resVal := obj1.ToI32() + obj2.ToI32()
-			resObj, err := CreateI32Object[int32](resVal)
+			resObj, err := CreateI32Object(resVal)
 			if err != nil {
 				return err
 			}
@@ -135,7 +154,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 				return err
 			}
 			resVal := obj1.ToI32() - obj2.ToI32()
-			resObj, err := CreateI32Object[int32](resVal)
+			resObj, err := CreateI32Object(resVal)
 			if err != nil {
 				return err
 			}
@@ -151,7 +170,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 				return err
 			}
 			resVal := obj1.ToI32() * obj2.ToI32()
-			resObj, err := CreateI32Object[int32](resVal)
+			resObj, err := CreateI32Object(resVal)
 			if err != nil {
 				return err
 			}
@@ -170,7 +189,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 				return fmt.Errorf("division by zero")
 			}
 			resVal := obj1.ToI32() / obj2.ToI32()
-			resObj, err := CreateI32Object[int32](resVal)
+			resObj, err := CreateI32Object(resVal)
 			if err != nil {
 				return err
 			}
@@ -186,7 +205,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 				return err
 			}
 			res := obj1.ToI32() < obj2.ToI32()
-			resObj, err := CreateBool[bool](res)
+			resObj, err := CreateBool(res)
 			if err != nil {
 				return err
 			}
@@ -202,7 +221,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 				return err
 			}
 			res := obj1.ToI32() > obj2.ToI32()
-			resObj, err := CreateBool[bool](res)
+			resObj, err := CreateBool(res)
 			if err != nil {
 				return err
 			}
@@ -218,7 +237,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 				return err
 			}
 			res := obj1.ToI32() <= obj2.ToI32()
-			resObj, err := CreateBool[bool](res)
+			resObj, err := CreateBool(res)
 			if err != nil {
 				return err
 			}
@@ -234,7 +253,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 				return err
 			}
 			res := obj1.ToI32() >= obj2.ToI32()
-			resObj, err := CreateBool[bool](res)
+			resObj, err := CreateBool(res)
 			if err != nil {
 				return err
 			}
@@ -250,7 +269,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 				return err
 			}
 			res := obj1.ToI32() == obj2.ToI32()
-			resObj, err := CreateBool[bool](res)
+			resObj, err := CreateBool(res)
 			if err != nil {
 				return err
 			}
@@ -298,8 +317,8 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 				return err
 			}
 			vm.PushFrame(ctx, Frame{
-				StackOffset: len(vm.Stack),
-				HeapOffset:  len(vm.Heap),
+				StackOffset: int(vm.SP),
+				HeapOffset:  int(vm.HP),
 				ReturnIP:    uint32(addr.ToI32()),
 				FrameOffset: -1,
 			})
@@ -315,8 +334,8 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 			if err != nil {
 				return err
 			}
-			vm.Heap = vm.Heap[:fr.HeapOffset]
-			vm.Stack = vm.Stack[:fr.StackOffset]
+			vm.HP = uint(fr.HeapOffset)
+			vm.SP = uint(fr.StackOffset)
 		case OP_BLOCK_LOAD:
 			ip++
 			ind, err := CreateI32Object(instr.Operands)
@@ -378,7 +397,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 			if err != nil {
 				return err
 			}
-			_, err = vm.New(ctx, obj)
+			err = vm.New(ctx, obj)
 			if err != nil {
 				return err
 			}
@@ -393,10 +412,10 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 				return err
 			}
 			vm.PushFrame(ctx, Frame{
-				StackOffset: len(vm.Stack) - int(argsLen.ToI32()),
-				HeapOffset:  len(vm.Heap),
+				StackOffset: int(vm.SP) - int(argsLen.ToI32()),
+				HeapOffset:  int(vm.HP),
 				ReturnIP:    uint32(ip),
-				FrameOffset: len(vm.StackFrame),
+				FrameOffset: int(vm.FP),
 			})
 			ip = uint32(addr.ToI32())
 		case OP_FUNC_RET:
@@ -409,10 +428,10 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 				return err
 			}
 			ip = fr.ReturnIP
-			objs := vm.Stack[len(vm.Stack)-int(retLen.ToI32()):]
-			vm.Heap = vm.Heap[:fr.HeapOffset]
-			vm.Stack = vm.Stack[:fr.StackOffset]
-			vm.StackFrame = vm.StackFrame[:fr.FrameOffset]
+			objs := vm.Stack[int(vm.SP)-int(retLen.ToI32()) : vm.SP]
+			vm.HP = uint(fr.HeapOffset)
+			vm.SP = uint(fr.StackOffset)
+			vm.FP = uint(fr.FrameOffset)
 			for _, obj := range objs {
 				vm.Push(ctx, obj)
 			}

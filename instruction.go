@@ -90,9 +90,26 @@ type Instruction struct {
 
 func (i *Instruction) String() string {
 	var buf bytes.Buffer
-	fmt.Fprintf(&buf, "%s", instrKindString[i.Kind])
-	if len(i.Operands) > 0 {
-		fmt.Fprintf(&buf, " %v", i.Operands)
+	fmt.Fprintf(&buf, "%-12s", instrKindString[i.Kind])
+	switch i.Kind {
+	case OP_I32_LOAD:
+		obj, err := CreateI32Object(i.Operands)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Fprintf(&buf, " %s", obj.String())
+	case OP_JUMP, OP_JUMPC, OP_JUMPNC, OP_BLOCK_START, OP_FUNC_CALL:
+		obj, err := CreateI32Object(i.Operands[:4])
+		if err != nil {
+			panic(err)
+		}
+		fmt.Fprintf(&buf, " [%d]", obj.ToI32())
+	case OP_LOAD, OP_BLOCK_LOAD, OP_LOCAL_LOAD, OP_SAVE, OP_BLOCK_SAVE, OP_LOCAL_SAVE:
+		obj, err := CreateI32Object(i.Operands)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Fprintf(&buf, " $%d", obj.ToI32())
 	}
 	return buf.String()
 }
