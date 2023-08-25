@@ -10,6 +10,8 @@ const (
 	TAG_I32 = iota
 	TAG_BOOL
 	TAG_F32
+
+	TAG_LIST // tag.elemTag.data...
 )
 
 type CVMObject struct {
@@ -25,11 +27,48 @@ func (o *CVMObject) String() string {
 		return fmt.Sprintf("(bool)%v", o.ToBool())
 	case TAG_F32:
 		return fmt.Sprintf("(f32)%v", o.ToF32())
+	case TAG_LIST:
+		str := fmt.Sprintf("(list.")
+		switch o.Value[0] {
+		case TAG_I32:
+			str += fmt.Sprintf("i32)[ ")
+		case TAG_BOOL:
+			str += fmt.Sprintf("bool)[ ")
+		case TAG_F32:
+			str += fmt.Sprintf("f32)[ ")
+		default:
+			str += fmt.Sprintf("unknown)%v", o.Value)
+		}
+		var obj CVMObject
+		var err error
+		for i := 1; i < len(o.Value[1:]); {
+			switch o.Value[i] {
+			case TAG_I32:
+				obj, err = CreateObject(o.Value[i : i+5])
+				i += 5
+			case TAG_BOOL:
+				obj, err = CreateObject(o.Value[i : i+2])
+				i += 2
+			case TAG_F32:
+				obj, err = CreateObject(o.Value[i : i+5])
+				i += 5
+			default:
+				err = fmt.Errorf("unknown tag %d", o.Value[i])
+			}
+			if err != nil {
+				return str + "'" + err.Error() + "' ]"
+			}
+			str += obj.String() + " "
+		}
+		str += "]"
+		return str
 	default:
 		return fmt.Sprintf("(unknown)%v", o.Value)
 	}
 }
-
+func (o *CVMObject) Bytes() []byte {
+	return append([]byte{o.Tag}, o.Value...)
+}
 func (o *CVMObject) ToI32() int32 {
 	if o.Tag != TAG_I32 {
 		return 0
@@ -69,55 +108,52 @@ func (o *CVMObject) F32ToBool() bool {
 	}
 	return true
 }
-func CreateI32Object[T []byte | int32](val T) (CVMObject, error) {
+func CreateI32(val int32) (CVMObject, error) {
 	var obj CVMObject
 	obj.Value = nil
-	switch val := any(val).(type) {
-	case []byte:
-		obj.Tag = val[0]
-		if obj.Tag != TAG_I32 {
-			return obj, fmt.Errorf("invalid tag for i32 object: %02x", obj.Tag)
-		}
-		obj.Value = val[1:]
-	case int32:
-		obj.Tag = TAG_I32
-		obj.Value = binary.LittleEndian.AppendUint32(obj.Value, uint32(val))
+	obj.Tag = TAG_I32
+	obj.Value = binary.LittleEndian.AppendUint32(obj.Value, uint32(val))
+	return obj, nil
+}
+func CreateBool(val bool) (CVMObject, error) {
+	var obj CVMObject
+	obj.Value = nil
+	obj.Tag = TAG_BOOL
+	if val {
+		obj.Value = append(obj.Value, 1)
+	} else {
+		obj.Value = append(obj.Value, 0)
 	}
 	return obj, nil
 }
-func CreateBool[T []byte | bool](val T) (CVMObject, error) {
+func CreateF32(val float32) (CVMObject, error) {
 	var obj CVMObject
 	obj.Value = nil
-	switch val := any(val).(type) {
-	case []byte:
-		obj.Tag = val[0]
-		if obj.Tag != TAG_BOOL {
-			return obj, fmt.Errorf("invalid tag for bool object: %02x", obj.Tag)
-		}
-		obj.Value = val[1:]
-	case bool:
-		obj.Tag = TAG_BOOL
-		if val {
-			obj.Value = append(obj.Value, 1)
-		} else {
-			obj.Value = append(obj.Value, 0)
-		}
-	}
+	obj.Tag = TAG_F32
+	obj.Value = binary.LittleEndian.AppendUint32(obj.Value, math.Float32bits(val))
 	return obj, nil
 }
-func CreateF32[T []byte | float32](val T) (CVMObject, error) {
+func CreateList(val []byte) (CVMObject, error) {
+	return CVMObject{
+		Tag:   TAG_LIST,
+		Value: val,
+	}, nil
+}
+func CreateObject(val []byte) (CVMObject, error) {
 	var obj CVMObject
 	obj.Value = nil
-	switch val := any(val).(type) {
-	case []byte:
+	switch val[0] {
+	case TAG_I32:
 		obj.Tag = val[0]
-		if obj.Tag != TAG_F32 {
-			return obj, fmt.Errorf("invalid tag for f32 object: %02x", obj.Tag)
-		}
 		obj.Value = val[1:]
-	case float32:
-		obj.Tag = TAG_F32
-		obj.Value = binary.LittleEndian.AppendUint32(obj.Value, math.Float32bits(val))
+	case TAG_F32:
+		obj.Tag = val[0]
+		obj.Value = val[1:]
+	case TAG_BOOL:
+		obj.Tag = val[0]
+		obj.Value = val[1:]
+	default:
+		return obj, fmt.Errorf("unknown tag %v", val[0])
 	}
 	return obj, nil
 }

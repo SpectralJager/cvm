@@ -46,6 +46,11 @@ const (
 	OP_F32_TO_I32
 	OP_F32_TO_BOOL
 
+	OP_LIST_NEW
+	OP_LIST_APPEND
+	OP_LIST_GET
+	OP_LIST_POP
+
 	OP_JUMP
 	OP_JUMPC
 	OP_JUMPNC
@@ -59,6 +64,8 @@ const (
 	OP_LOAD
 	OP_SAVE
 	OP_NEW
+	OP_FREE
+	OP_POP
 
 	OP_FUNC_CALL
 	OP_FUNC_RET
@@ -105,6 +112,11 @@ var instrKindString = map[byte]string{
 	OP_F32_TO_I32:  "f32.to_i32",
 	OP_F32_TO_BOOL: "f32.to_bool",
 
+	OP_LIST_NEW:    "list.new",
+	OP_LIST_APPEND: "list.append",
+	OP_LIST_GET:    "list.get",
+	OP_LIST_POP:    "list.pop",
+
 	OP_JUMP:   "jump",
 	OP_JUMPC:  "jumpc",
 	OP_JUMPNC: "jumpnc",
@@ -118,6 +130,8 @@ var instrKindString = map[byte]string{
 	OP_LOAD: "load",
 	OP_NEW:  "new",
 	OP_SAVE: "save",
+	OP_POP:  "pop",
+	OP_FREE: "free",
 
 	OP_FUNC_CALL: "func.call",
 	OP_FUNC_RET:  "func.ret",
@@ -140,31 +154,31 @@ func (i *Instruction) String() string {
 	fmt.Fprintf(&buf, "%-12s", instrKindString[i.Kind])
 	switch i.Kind {
 	case OP_I32_LOAD:
-		obj, err := CreateI32Object(i.Operands)
+		obj, err := CreateObject(i.Operands)
 		if err != nil {
 			panic(err)
 		}
 		fmt.Fprintf(&buf, " %s", obj.String())
 	case OP_BOOL_LOAD:
-		obj, err := CreateBool(i.Operands)
+		obj, err := CreateObject(i.Operands)
 		if err != nil {
 			panic(err)
 		}
 		fmt.Fprintf(&buf, " %s", obj.String())
 	case OP_F32_LOAD:
-		obj, err := CreateF32(i.Operands)
+		obj, err := CreateObject(i.Operands)
 		if err != nil {
 			panic(err)
 		}
 		fmt.Fprintf(&buf, " %s", obj.String())
-	case OP_JUMP, OP_JUMPC, OP_JUMPNC, OP_BLOCK_START, OP_FUNC_CALL:
-		obj, err := CreateI32Object(i.Operands[:4])
+	case OP_JUMP, OP_JUMPC, OP_JUMPNC, OP_BLOCK_START, OP_FUNC_CALL, OP_LIST_GET:
+		obj, err := CreateObject(i.Operands[:4])
 		if err != nil {
 			panic(err)
 		}
 		fmt.Fprintf(&buf, " [%d]", obj.ToI32())
 	case OP_LOAD, OP_BLOCK_LOAD, OP_LOCAL_LOAD, OP_SAVE, OP_BLOCK_SAVE, OP_LOCAL_SAVE:
-		obj, err := CreateI32Object(i.Operands)
+		obj, err := CreateObject(i.Operands)
 		if err != nil {
 			panic(err)
 		}
@@ -354,6 +368,15 @@ func Save(x uint32) Instruction {
 func New() Instruction {
 	return Instruction{Kind: OP_NEW}
 }
+func Pop() Instruction {
+	return Instruction{Kind: OP_POP}
+}
+func Free(x uint32) Instruction {
+	buf := make([]byte, 0, 5)
+	buf = append(buf, TAG_I32)
+	buf = binary.LittleEndian.AppendUint32(buf, uint32(x))
+	return Instruction{Kind: OP_FREE, Operands: buf}
+}
 func FuncCall(addr uint32, args uint32) Instruction {
 	buf := make([]byte, 0, 10)
 	buf = append(buf, TAG_I32)
@@ -367,4 +390,21 @@ func FuncRet(x uint32) Instruction {
 	buf = append(buf, TAG_I32)
 	buf = binary.LittleEndian.AppendUint32(buf, x)
 	return Instruction{Kind: OP_FUNC_RET, Operands: buf}
+}
+func ListNew(it byte) Instruction {
+	buf := make([]byte, 0, 1)
+	buf = append(buf, it)
+	return Instruction{Kind: OP_LIST_NEW, Operands: buf}
+}
+func ListAppend() Instruction {
+	return Instruction{Kind: OP_LIST_APPEND}
+}
+func ListGet(x uint32) Instruction {
+	buf := make([]byte, 0, 5)
+	buf = append(buf, TAG_I32)
+	buf = binary.LittleEndian.AppendUint32(buf, x)
+	return Instruction{Kind: OP_LIST_GET, Operands: buf}
+}
+func ListPop() Instruction {
+	return Instruction{Kind: OP_LIST_POP}
 }

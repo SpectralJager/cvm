@@ -33,6 +33,13 @@ func (vm *CVM) Load(ctx context.Context, ind uint32) (CVMObject, error) {
 	}
 	return vm.Heap[ind], nil
 }
+func (vm *CVM) Free(ctx context.Context, ind uint32) error {
+	if uint32(vm.HP) < ind {
+		return fmt.Errorf("symbol with index %d not found", ind)
+	}
+	vm.Heap[ind] = CVMObject{}
+	return nil
+}
 func (vm *CVM) Save(ctx context.Context, ind uint32, obj CVMObject) error {
 	if uint32(vm.HP) < ind {
 		return fmt.Errorf("symbol with index %d not found", ind)
@@ -99,7 +106,9 @@ func (vm *CVM) Trace() string {
 	var buf bytes.Buffer
 	fmt.Fprint(&buf, "=== Heap:\n")
 	for i := 0; i < int(vm.HP); i++ {
-		fmt.Fprintf(&buf, "\t$%03d -> %s\n", i, vm.Heap[i].String())
+		if vm.Heap[i].Value != nil {
+			fmt.Fprintf(&buf, "\t$%03d -> %s\n", i, vm.Heap[i].String())
+		}
 	}
 	fmt.Fprint(&buf, "=== StackFrace:\n")
 	for i := 0; i < int(vm.FP); i++ {
@@ -122,7 +131,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 			return ErrReachHalt
 		case OP_I32_LOAD:
 			ip++
-			obj, err := CreateI32Object(instr.Operands)
+			obj, err := CreateObject(instr.Operands)
 			if err != nil {
 				return err
 			}
@@ -134,7 +143,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 				return err
 			}
 			resVal := -obj.ToI32()
-			resObj, err := CreateI32Object(resVal)
+			resObj, err := CreateI32(resVal)
 			if err != nil {
 				return err
 			}
@@ -150,7 +159,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 				return err
 			}
 			resVal := obj1.ToI32() + obj2.ToI32()
-			resObj, err := CreateI32Object(resVal)
+			resObj, err := CreateI32(resVal)
 			if err != nil {
 				return err
 			}
@@ -166,7 +175,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 				return err
 			}
 			resVal := obj1.ToI32() - obj2.ToI32()
-			resObj, err := CreateI32Object(resVal)
+			resObj, err := CreateI32(resVal)
 			if err != nil {
 				return err
 			}
@@ -182,7 +191,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 				return err
 			}
 			resVal := obj1.ToI32() * obj2.ToI32()
-			resObj, err := CreateI32Object(resVal)
+			resObj, err := CreateI32(resVal)
 			if err != nil {
 				return err
 			}
@@ -201,7 +210,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 				return fmt.Errorf("division by zero")
 			}
 			resVal := obj1.ToI32() / obj2.ToI32()
-			resObj, err := CreateI32Object(resVal)
+			resObj, err := CreateI32(resVal)
 			if err != nil {
 				return err
 			}
@@ -312,7 +321,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 			vm.Push(ctx, resObj)
 		case OP_BOOL_LOAD:
 			ip++
-			obj, err := CreateBool(instr.Operands)
+			obj, err := CreateObject(instr.Operands)
 			if err != nil {
 				return err
 			}
@@ -384,7 +393,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 			vm.Push(ctx, resObj)
 		case OP_F32_LOAD:
 			ip++
-			obj, err := CreateF32(instr.Operands)
+			obj, err := CreateObject(instr.Operands)
 			if err != nil {
 				return err
 			}
@@ -555,7 +564,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 				return err
 			}
 			resVal := obj.F32ToI32()
-			resObj, err := CreateI32Object(resVal)
+			resObj, err := CreateI32(resVal)
 			if err != nil {
 				return err
 			}
@@ -573,7 +582,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 			}
 			vm.Push(ctx, resObj)
 		case OP_JUMP:
-			obj, err := CreateI32Object(instr.Operands)
+			obj, err := CreateObject(instr.Operands)
 			if err != nil {
 				return err
 			}
@@ -588,7 +597,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 				ip++
 				continue
 			}
-			addr, err := CreateI32Object(instr.Operands)
+			addr, err := CreateObject(instr.Operands)
 			if err != nil {
 				return err
 			}
@@ -603,14 +612,14 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 				ip++
 				continue
 			}
-			addr, err := CreateI32Object(instr.Operands)
+			addr, err := CreateObject(instr.Operands)
 			if err != nil {
 				return err
 			}
 			ip = uint32(addr.ToI32())
 		case OP_BLOCK_START:
 			ip++
-			addr, err := CreateI32Object(instr.Operands)
+			addr, err := CreateObject(instr.Operands)
 			if err != nil {
 				return err
 			}
@@ -636,7 +645,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 			vm.SP = uint(fr.StackOffset)
 		case OP_BLOCK_LOAD:
 			ip++
-			ind, err := CreateI32Object(instr.Operands)
+			ind, err := CreateObject(instr.Operands)
 			if err != nil {
 				return err
 			}
@@ -651,7 +660,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 			vm.Push(ctx, obj)
 		case OP_BLOCK_SAVE:
 			ip++
-			ind, err := CreateI32Object(instr.Operands)
+			ind, err := CreateObject(instr.Operands)
 			if err != nil {
 				return err
 			}
@@ -669,7 +678,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 			}
 		case OP_LOAD:
 			ip++
-			ind, err := CreateI32Object(instr.Operands)
+			ind, err := CreateObject(instr.Operands)
 			if err != nil {
 				return err
 			}
@@ -677,7 +686,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 			vm.Push(ctx, obj)
 		case OP_SAVE:
 			ip++
-			ind, err := CreateI32Object(instr.Operands)
+			ind, err := CreateObject(instr.Operands)
 			if err != nil {
 				return err
 			}
@@ -686,6 +695,16 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 				return err
 			}
 			err = vm.Save(ctx, uint32(ind.ToI32()), obj)
+			if err != nil {
+				return err
+			}
+		case OP_FREE:
+			ip++
+			ind, err := CreateObject(instr.Operands)
+			if err != nil {
+				return err
+			}
+			err = vm.Free(ctx, uint32(ind.ToI32()))
 			if err != nil {
 				return err
 			}
@@ -699,13 +718,19 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 			if err != nil {
 				return err
 			}
-		case OP_FUNC_CALL:
+		case OP_POP:
 			ip++
-			addr, err := CreateI32Object(instr.Operands[:5])
+			_, err := vm.Pop(ctx)
 			if err != nil {
 				return err
 			}
-			argsLen, err := CreateI32Object(instr.Operands[5:10])
+		case OP_FUNC_CALL:
+			ip++
+			addr, err := CreateObject(instr.Operands[:5])
+			if err != nil {
+				return err
+			}
+			argsLen, err := CreateObject(instr.Operands[5:10])
 			if err != nil {
 				return err
 			}
@@ -721,7 +746,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 			if err != nil {
 				return err
 			}
-			retLen, err := CreateI32Object(instr.Operands[:5])
+			retLen, err := CreateObject(instr.Operands[:5])
 			if err != nil {
 				return err
 			}
@@ -735,7 +760,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 			}
 		case OP_LOCAL_LOAD:
 			ip++
-			ind, err := CreateI32Object(instr.Operands)
+			ind, err := CreateObject(instr.Operands)
 			if err != nil {
 				return err
 			}
@@ -750,7 +775,7 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 			vm.Push(ctx, obj)
 		case OP_LOCAL_SAVE:
 			ip++
-			ind, err := CreateI32Object(instr.Operands)
+			ind, err := CreateObject(instr.Operands)
 			if err != nil {
 				return err
 			}
@@ -766,6 +791,102 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 			if err != nil {
 				return err
 			}
+		case OP_LIST_NEW:
+			ip++
+			obj, err := CreateList(instr.Operands)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, obj)
+		case OP_LIST_APPEND:
+			ip++
+			obj, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			list, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			if list.Tag != TAG_LIST {
+				return fmt.Errorf("expected list, got %v", list.Tag)
+			}
+			if list.Value[0] != obj.Tag {
+				return fmt.Errorf("cant add %d to list of %d", obj.Tag, list.Value[0])
+			}
+			list.Value = append(list.Value, obj.Bytes()...)
+			vm.Push(ctx, list)
+		case OP_LIST_GET:
+			ip++
+			ind, err := CreateObject(instr.Operands)
+			if err != nil {
+				return err
+			}
+			list, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			if list.Tag != TAG_LIST {
+				return fmt.Errorf("expected list, got %v", list.Tag)
+			}
+			var obj CVMObject
+			switch list.Value[0] {
+			case TAG_I32:
+				if len(list.Value[1:])/5-1 < int(ind.ToI32()) {
+					return fmt.Errorf("index %d out of range", ind.ToI32())
+				}
+				offStart, OffEnd := (1 + ind.ToI32()*5), (ind.ToI32()*5 + 6)
+				obj, err = CreateObject(list.Value[offStart:OffEnd])
+			case TAG_F32:
+				if len(list.Value[1:])/5-1 < int(ind.ToI32()) {
+					return fmt.Errorf("index %d out of range", ind.ToI32())
+				}
+				offStart, OffEnd := (1 + ind.ToI32()*5), (ind.ToI32()*5 + 6)
+				obj, err = CreateObject(list.Value[offStart:OffEnd])
+			case TAG_BOOL:
+				if len(list.Value[1:])/2-1 < int(ind.ToI32()) {
+					return fmt.Errorf("index %d out of range", ind.ToI32())
+				}
+				offStart, OffEnd := (1 + ind.ToI32()*2), (ind.ToI32()*2 + 3)
+				obj, err = CreateObject(list.Value[offStart:OffEnd])
+			default:
+				return fmt.Errorf("unexpected object tag %v", list.Value[0])
+			}
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, obj)
+		case OP_LIST_POP:
+			ip++
+			list, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			if list.Tag != TAG_LIST {
+				return fmt.Errorf("expected list, got %v", list.Tag)
+			}
+			if len(list.Value) <= 1 {
+				return fmt.Errorf("trying to pop element from empty list")
+			}
+			var obj CVMObject
+			switch list.Value[0] {
+			case TAG_I32:
+				offStart, OffEnd := len(list.Value)-5, len(list.Value)
+				obj, err = CreateObject(list.Value[offStart:OffEnd])
+				list.Value = list.Value[:offStart]
+			case TAG_F32:
+				offStart, OffEnd := len(list.Value)-5, len(list.Value)
+				obj, err = CreateObject(list.Value[offStart:OffEnd])
+				list.Value = list.Value[:offStart]
+			case TAG_BOOL:
+				offStart, OffEnd := len(list.Value)-2, len(list.Value)
+				obj, err = CreateObject(list.Value[offStart:OffEnd])
+				list.Value = list.Value[:offStart]
+			default:
+				return fmt.Errorf("unexpected object tag %v", list.Value[0])
+			}
+			vm.Push(ctx, list)
+			vm.Push(ctx, obj)
 		default:
 			return fmt.Errorf("unknown instruction of kind 0x%02x", instr.Kind)
 		}
