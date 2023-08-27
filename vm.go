@@ -814,6 +814,17 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 			if list.Value[0] != obj.Tag {
 				return fmt.Errorf("cant add %d to list of %d", obj.Tag, list.Value[0])
 			}
+			len, err := CreateObject(list.Value[1:6])
+			if err != nil {
+				return err
+			}
+			len, err = CreateI32(len.ToI32() + 1)
+			if err != nil {
+				return err
+			}
+			for i := 1; i < 6; i++ {
+				list.Value[i] = len.Bytes()[i-1]
+			}
 			list.Value = append(list.Value, obj.Bytes()...)
 			vm.Push(ctx, list)
 		case OP_LIST_GET:
@@ -832,22 +843,22 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 			var obj CVMObject
 			switch list.Value[0] {
 			case TAG_I32:
-				if len(list.Value[1:])/5-1 < int(ind.ToI32()) {
+				if len(list.Value[6:])/5-1 < int(ind.ToI32()) {
 					return fmt.Errorf("index %d out of range", ind.ToI32())
 				}
-				offStart, OffEnd := (1 + ind.ToI32()*5), (ind.ToI32()*5 + 6)
+				offStart, OffEnd := (6 + ind.ToI32()*5), (ind.ToI32()*5 + 11)
 				obj, err = CreateObject(list.Value[offStart:OffEnd])
 			case TAG_F32:
-				if len(list.Value[1:])/5-1 < int(ind.ToI32()) {
+				if len(list.Value[6:])/5-1 < int(ind.ToI32()) {
 					return fmt.Errorf("index %d out of range", ind.ToI32())
 				}
-				offStart, OffEnd := (1 + ind.ToI32()*5), (ind.ToI32()*5 + 6)
+				offStart, OffEnd := (6 + ind.ToI32()*5), (ind.ToI32()*5 + 11)
 				obj, err = CreateObject(list.Value[offStart:OffEnd])
 			case TAG_BOOL:
-				if len(list.Value[1:])/2-1 < int(ind.ToI32()) {
+				if len(list.Value[6:])/2-1 < int(ind.ToI32()) {
 					return fmt.Errorf("index %d out of range", ind.ToI32())
 				}
-				offStart, OffEnd := (1 + ind.ToI32()*2), (ind.ToI32()*2 + 3)
+				offStart, OffEnd := (6 + ind.ToI32()*2), (ind.ToI32()*2 + 8)
 				obj, err = CreateObject(list.Value[offStart:OffEnd])
 			default:
 				return fmt.Errorf("unexpected object tag %v", list.Value[0])
@@ -865,8 +876,15 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 			if list.Tag != TAG_LIST {
 				return fmt.Errorf("expected list, got %v", list.Tag)
 			}
-			if len(list.Value) <= 1 {
+			if len(list.Value) <= 6 {
 				return fmt.Errorf("trying to pop element from empty list")
+			}
+			l, err := CreateObject(list.Value[1:6])
+			if err != nil {
+				return err
+			}
+			if l.ToI32() <= 0 {
+				return fmt.Errorf("list is empty")
 			}
 			var obj CVMObject
 			switch list.Value[0] {
@@ -885,8 +903,140 @@ func (vm *CVM) Execute(ctx context.Context, instrs []Instruction) error {
 			default:
 				return fmt.Errorf("unexpected object tag %v", list.Value[0])
 			}
+			l, err = CreateObject(list.Value[1:6])
+			if err != nil {
+				return err
+			}
+			if l.ToI32() <= 0 {
+				return fmt.Errorf("list is empty")
+			}
+			l, err = CreateI32(l.ToI32() - 1)
+			if err != nil {
+				return err
+			}
+			for i := 1; i < 6; i++ {
+				list.Value[i] = l.Bytes()[i-1]
+			}
 			vm.Push(ctx, list)
 			vm.Push(ctx, obj)
+		case OP_LIST_INSERT:
+			ip++
+			ind, err := CreateObject(instr.Operands)
+			if err != nil {
+				return err
+			}
+			obj, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			list, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			if list.Tag != TAG_LIST {
+				return fmt.Errorf("expected list, got %v", list.Tag)
+			}
+			l, err := CreateObject(list.Value[1:6])
+			if err != nil {
+				return err
+			}
+			if l.ToI32() <= 0 {
+				return fmt.Errorf("list is empty")
+			} else if l.ToI32() < ind.ToI32() {
+				return fmt.Errorf("index %d out of range", ind.ToI32())
+			}
+			switch list.Value[0] {
+			case TAG_I32:
+				offStart := (6 + ind.ToI32()*5)
+				list.Value = append(list.Value[:offStart], append(obj.Bytes(), list.Value[offStart:]...)...)
+			case TAG_F32:
+			case TAG_BOOL:
+			default:
+				return fmt.Errorf("unexpected object tag %v", list.Value[0])
+			}
+			l, err = CreateI32(l.ToI32() + 1)
+			if err != nil {
+				return err
+			}
+			for i := 1; i < 6; i++ {
+				list.Value[i] = l.Bytes()[i-1]
+			}
+			vm.Push(ctx, list)
+		case OP_LIST_REMOVE:
+			ip++
+			ind, err := CreateObject(instr.Operands)
+			if err != nil {
+				return err
+			}
+			list, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			if list.Tag != TAG_LIST {
+				return fmt.Errorf("expected list, got %v", list.Tag)
+			}
+			l, err := CreateObject(list.Value[1:6])
+			if err != nil {
+				return err
+			}
+			if l.ToI32() <= 0 {
+				return fmt.Errorf("list is empty")
+			} else if l.ToI32() <= ind.ToI32() {
+				return fmt.Errorf("index %d out of range", ind.ToI32())
+			}
+			switch list.Value[0] {
+			case TAG_I32:
+				offStart, OffEnd := (6 + ind.ToI32()*5), (ind.ToI32()*5 + 11)
+				list.Value = append(list.Value[:offStart], list.Value[OffEnd:]...)
+			case TAG_F32:
+			case TAG_BOOL:
+			default:
+				return fmt.Errorf("unexpected object tag %v", list.Value[0])
+			}
+			l, err = CreateI32(l.ToI32() - 1)
+			if err != nil {
+				return err
+			}
+			for i := 1; i < 6; i++ {
+				list.Value[i] = l.Bytes()[i-1]
+			}
+			vm.Push(ctx, list)
+		case OP_LIST_REPLACE:
+			ip++
+			ind, err := CreateObject(instr.Operands)
+			if err != nil {
+				return err
+			}
+			obj, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			list, err := vm.Pop(ctx)
+			if err != nil {
+				return err
+			}
+			if list.Tag != TAG_LIST {
+				return fmt.Errorf("expected list, got %v", list.Tag)
+			}
+			l, err := CreateObject(list.Value[1:6])
+			if err != nil {
+				return err
+			}
+			if l.ToI32() <= 0 {
+				return fmt.Errorf("list is empty")
+			} else if l.ToI32() <= ind.ToI32() {
+				return fmt.Errorf("index %d out of range", ind.ToI32())
+			}
+			switch list.Value[0] {
+			case TAG_I32:
+				offStart, OffEnd := (6 + ind.ToI32()*5), (ind.ToI32()*5 + 11)
+				list.Value = append(list.Value[:offStart], append(obj.Bytes(), list.Value[OffEnd:]...)...)
+			case TAG_F32:
+			case TAG_BOOL:
+			default:
+				return fmt.Errorf("unexpected object tag %v", list.Value[0])
+			}
+			vm.Push(ctx, list)
 		default:
 			return fmt.Errorf("unknown instruction of kind 0x%02x", instr.Kind)
 		}

@@ -13,17 +13,13 @@ func main() {
 		ListAppend(),
 		I32Load(24),
 		ListAppend(),
-		I32Load(32),
-		ListAppend(),
 		I32Load(48),
 		ListAppend(),
-		I32Load(100),
+		I32Load(96),
 		ListAppend(),
+		I32Load(6),
+		ListInsert(0),
 		New(),
-		Load(0),
-		ListPop(),
-		Pop(),
-		Save(0),
 		Halt(),
 	}
 	for i, instr := range instrs {
@@ -31,7 +27,7 @@ func main() {
 	}
 	fmt.Println()
 	vm := CVM{}
-	// fl, err := os.Create("fib.prof")
+	// fl, err := os.Create("p.prof")
 	// if err != nil {
 	// 	panic(err)
 	// }

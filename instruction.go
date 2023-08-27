@@ -50,6 +50,9 @@ const (
 	OP_LIST_APPEND
 	OP_LIST_GET
 	OP_LIST_POP
+	OP_LIST_INSERT
+	OP_LIST_REPLACE
+	OP_LIST_REMOVE
 
 	OP_JUMP
 	OP_JUMPC
@@ -112,10 +115,13 @@ var instrKindString = map[byte]string{
 	OP_F32_TO_I32:  "f32.to_i32",
 	OP_F32_TO_BOOL: "f32.to_bool",
 
-	OP_LIST_NEW:    "list.new",
-	OP_LIST_APPEND: "list.append",
-	OP_LIST_GET:    "list.get",
-	OP_LIST_POP:    "list.pop",
+	OP_LIST_NEW:     "list.new",
+	OP_LIST_APPEND:  "list.append",
+	OP_LIST_GET:     "list.get",
+	OP_LIST_POP:     "list.pop",
+	OP_LIST_REMOVE:  "list.remove",
+	OP_LIST_INSERT:  "list.insert",
+	OP_LIST_REPLACE: "list.replace",
 
 	OP_JUMP:   "jump",
 	OP_JUMPC:  "jumpc",
@@ -392,8 +398,10 @@ func FuncRet(x uint32) Instruction {
 	return Instruction{Kind: OP_FUNC_RET, Operands: buf}
 }
 func ListNew(it byte) Instruction {
-	buf := make([]byte, 0, 1)
+	buf := make([]byte, 0, 6)
 	buf = append(buf, it)
+	buf = append(buf, TAG_I32)
+	buf = binary.LittleEndian.AppendUint32(buf, 0)
 	return Instruction{Kind: OP_LIST_NEW, Operands: buf}
 }
 func ListAppend() Instruction {
@@ -407,4 +415,22 @@ func ListGet(x uint32) Instruction {
 }
 func ListPop() Instruction {
 	return Instruction{Kind: OP_LIST_POP}
+}
+func ListInsert(index uint32) Instruction {
+	buf := make([]byte, 0, 10)
+	buf = append(buf, TAG_I32)
+	buf = binary.LittleEndian.AppendUint32(buf, index)
+	return Instruction{Kind: OP_LIST_INSERT, Operands: buf}
+}
+func ListRemove(index uint32) Instruction {
+	buf := make([]byte, 0, 10)
+	buf = append(buf, TAG_I32)
+	buf = binary.LittleEndian.AppendUint32(buf, index)
+	return Instruction{Kind: OP_LIST_REMOVE, Operands: buf}
+}
+func ListReplace(index uint32) Instruction {
+	buf := make([]byte, 0, 10)
+	buf = append(buf, TAG_I32)
+	buf = binary.LittleEndian.AppendUint32(buf, index)
+	return Instruction{Kind: OP_LIST_REPLACE, Operands: buf}
 }

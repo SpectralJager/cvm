@@ -31,17 +31,20 @@ func (o *CVMObject) String() string {
 		str := fmt.Sprintf("(list.")
 		switch o.Value[0] {
 		case TAG_I32:
-			str += fmt.Sprintf("i32)[ ")
+			str += fmt.Sprintf("i32)[")
 		case TAG_BOOL:
-			str += fmt.Sprintf("bool)[ ")
+			str += fmt.Sprintf("bool)[")
 		case TAG_F32:
-			str += fmt.Sprintf("f32)[ ")
+			str += fmt.Sprintf("f32)[")
 		default:
 			str += fmt.Sprintf("unknown)%v", o.Value)
 		}
-		var obj CVMObject
-		var err error
-		for i := 1; i < len(o.Value[1:]); {
+		obj, err := CreateObject(o.Value[1:6])
+		if err != nil {
+			return err.Error()
+		}
+		str += fmt.Sprintf("%s]{ ", obj.String()[5:])
+		for i := 6; i < len(o.Value[1:]); {
 			switch o.Value[i] {
 			case TAG_I32:
 				obj, err = CreateObject(o.Value[i : i+5])
@@ -60,7 +63,7 @@ func (o *CVMObject) String() string {
 			}
 			str += obj.String() + " "
 		}
-		str += "]"
+		str += "}"
 		return str
 	default:
 		return fmt.Sprintf("(unknown)%v", o.Value)
