@@ -685,6 +685,20 @@ func (vm *CVM) Execute(ctx context.Context, instrs []instruction.Instruction) er
 				return err
 			}
 			vm.Push(ctx, list)
+		case instruction.OP_STRING_LOAD:
+			ip++
+			str, err := object.CreateObject(instr.Operands)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, str)
+		case instruction.OP_STRING_CONCAT:
+			ip++
+			resObj, err := BinaryOperation(ctx, vm, object.ConcatString)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
 		default:
 			return fmt.Errorf("unknown instruction of kind 0x%02x", instr.Kind)
 		}

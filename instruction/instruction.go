@@ -54,6 +54,9 @@ const (
 	OP_LIST_REPLACE
 	OP_LIST_REMOVE
 
+	OP_STRING_LOAD
+	OP_STRING_CONCAT
+
 	OP_JUMP
 	OP_JUMPC
 	OP_JUMPNC
@@ -124,6 +127,9 @@ var instrKindString = map[byte]string{
 	OP_LIST_INSERT:  "list.insert",
 	OP_LIST_REPLACE: "list.replace",
 
+	OP_STRING_LOAD:   "string.load",
+	OP_STRING_CONCAT: "string.concat",
+
 	OP_JUMP:   "jump",
 	OP_JUMPC:  "jumpc",
 	OP_JUMPNC: "jumpnc",
@@ -156,7 +162,7 @@ func (i *Instruction) String() string {
 	var buf bytes.Buffer
 	fmt.Fprintf(&buf, "%-12s", instrKindString[i.Kind])
 	switch i.Kind {
-	case OP_I32_LOAD, OP_F32_LOAD, OP_BOOL_LOAD:
+	case OP_I32_LOAD, OP_F32_LOAD, OP_BOOL_LOAD, OP_STRING_LOAD:
 		obj, err := object.CreateObject(i.Operands)
 		if err != nil {
 			panic(err)
