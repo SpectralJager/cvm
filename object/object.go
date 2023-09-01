@@ -2,6 +2,7 @@ package object
 
 import (
 	"fmt"
+	"os"
 )
 
 const (
@@ -170,4 +171,52 @@ func Size(obj CVMObject) (int, error) {
 	default:
 		return 0, fmt.Errorf("unknown tag %v", obj.Tag)
 	}
+}
+
+func Print(obj CVMObject) (CVMObject, error) {
+	frmtO, err := CreateString("%.")
+	if err != nil {
+		return CVMObject{}, err
+	}
+	res, err := FormatString(frmtO, []CVMObject{obj})
+	if err != nil {
+		return CVMObject{}, err
+	}
+	resV, err := ValueString(res)
+	if err != nil {
+		return CVMObject{}, err
+	}
+	fmt.Fprint(os.Stdout, resV)
+	return CVMObject{}, nil
+}
+
+func Printf(f CVMObject, objs []CVMObject) (CVMObject, error) {
+	res, err := FormatString(f, objs)
+	if err != nil {
+		return CVMObject{}, err
+	}
+	resV, err := ValueString(res)
+	if err != nil {
+		return CVMObject{}, err
+	}
+	fmt.Fprint(os.Stdout, resV)
+	return CVMObject{}, nil
+}
+
+func Println(obj CVMObject) (CVMObject, error) {
+	f, err := CreateString("%.")
+	if err != nil {
+		return CVMObject{}, err
+	}
+
+	res, err := FormatString(f, []CVMObject{obj})
+	if err != nil {
+		return CVMObject{}, err
+	}
+	resV, err := ValueString(res)
+	if err != nil {
+		return CVMObject{}, err
+	}
+	fmt.Fprintln(os.Stdout, resV)
+	return CVMObject{}, nil
 }

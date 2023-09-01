@@ -685,24 +685,6 @@ func (vm *CVM) Execute(ctx context.Context, instrs []instruction.Instruction) er
 				return err
 			}
 			vm.Push(ctx, resObj)
-		case instruction.OP_STRING_PRINT:
-			ip++
-			_, err := UnaryOperation(ctx, vm, object.PrintString)
-			if err != nil {
-				return err
-			}
-		case instruction.OP_STRING_PRINTF:
-			ip++
-			_, err := NOperation(ctx, vm, object.PrintfString)
-			if err != nil {
-				return err
-			}
-		case instruction.OP_STRING_PRINTLN:
-			ip++
-			_, err := UnaryOperation(ctx, vm, object.PrintlnString)
-			if err != nil {
-				return err
-			}
 		case instruction.OP_TO_STRING:
 			ip++
 			resObj, err := UnaryOperation(ctx, vm, object.AsString)
@@ -731,6 +713,24 @@ func (vm *CVM) Execute(ctx context.Context, instrs []instruction.Instruction) er
 				return err
 			}
 			vm.Push(ctx, resObj)
+		case instruction.OP_PRINT:
+			ip++
+			_, err := UnaryOperation(ctx, vm, object.Print)
+			if err != nil {
+				return err
+			}
+		case instruction.OP_PRINTF:
+			ip++
+			_, err := NOperation(ctx, vm, object.Printf)
+			if err != nil {
+				return err
+			}
+		case instruction.OP_PRINTLN:
+			ip++
+			_, err := UnaryOperation(ctx, vm, object.Println)
+			if err != nil {
+				return err
+			}
 		default:
 			return fmt.Errorf("unknown instruction of kind 0x%02x", instr.Kind)
 		}

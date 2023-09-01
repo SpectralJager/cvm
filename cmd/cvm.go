@@ -14,7 +14,9 @@ func main() {
 		i.I32Load(20),
 		i.I32Load(32),
 		i.I32Load(3),
-		i.StringPrintf(),
+		i.Printf(),
+		i.I32Load(3),
+		i.Println(),
 		i.Halt(),
 	}
 	for i, inst := range instrs {

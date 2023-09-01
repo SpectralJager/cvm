@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -187,14 +186,11 @@ func FormatString(str CVMObject, data []CVMObject) (CVMObject, error) {
 	if err != nil {
 		return resObj, err
 	}
-	// temp := strings.Split(valStr, "%.")
-	// l := len(temp) - 1
 	l := strings.Count(valStr, "%.")
 	g := len(data)
 	if l != g {
 		return resObj, fmt.Errorf("invalid value format points (%d) and processing data (%d)", l, g)
 	}
-	// var resVal strings.Builder
 	for i := l - 1; i >= 0; i-- {
 		sO, err := AsString(data[i])
 		if err != nil {
@@ -208,52 +204,4 @@ func FormatString(str CVMObject, data []CVMObject) (CVMObject, error) {
 	}
 	resObj, err = CreateString(valStr)
 	return resObj, nil
-}
-
-func PrintString(obj CVMObject) (CVMObject, error) {
-	frmtO, err := CreateString("%.")
-	if err != nil {
-		return CVMObject{}, err
-	}
-	res, err := FormatString(frmtO, []CVMObject{obj})
-	if err != nil {
-		return CVMObject{}, err
-	}
-	resV, err := ValueString(res)
-	if err != nil {
-		return CVMObject{}, err
-	}
-	fmt.Fprint(os.Stdout, resV)
-	return CVMObject{}, nil
-}
-
-func PrintfString(f CVMObject, objs []CVMObject) (CVMObject, error) {
-	res, err := FormatString(f, objs)
-	if err != nil {
-		return CVMObject{}, err
-	}
-	resV, err := ValueString(res)
-	if err != nil {
-		return CVMObject{}, err
-	}
-	fmt.Fprint(os.Stdout, resV)
-	return CVMObject{}, nil
-}
-
-func PrintlnString(obj CVMObject) (CVMObject, error) {
-	f, err := CreateString("%.")
-	if err != nil {
-		return CVMObject{}, err
-	}
-
-	res, err := FormatString(f, []CVMObject{obj})
-	if err != nil {
-		return CVMObject{}, err
-	}
-	resV, err := ValueString(res)
-	if err != nil {
-		return CVMObject{}, err
-	}
-	fmt.Fprintln(os.Stdout, resV)
-	return CVMObject{}, nil
 }

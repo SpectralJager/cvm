@@ -21,15 +21,3 @@ func StringSplit() Instruction {
 func StringFormat() Instruction {
 	return Instruction{Kind: OP_STRING_FORMAT}
 }
-
-func StringPrint() Instruction {
-	return Instruction{Kind: OP_STRING_PRINT}
-}
-
-func StringPrintf() Instruction {
-	return Instruction{Kind: OP_STRING_PRINTF}
-}
-
-func StringPrintln() Instruction {
-	return Instruction{Kind: OP_STRING_PRINTLN}
-}

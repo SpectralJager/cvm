@@ -55,9 +55,6 @@ const (
 	OP_STRING_FORMAT
 	OP_STRING_LENGTH
 	OP_STRING_SPLIT
-	OP_STRING_PRINT
-	OP_STRING_PRINTF
-	OP_STRING_PRINTLN
 
 	OP_TO_STRING
 	OP_TO_I32
@@ -79,6 +76,10 @@ const (
 	OP_NEW
 	OP_FREE
 	OP_POP
+
+	OP_PRINT
+	OP_PRINTF
+	OP_PRINTLN
 
 	OP_FUNC_CALL
 	OP_FUNC_RET
@@ -130,14 +131,11 @@ var instrKindString = map[byte]string{
 	OP_LIST_INSERT:  "list.insert",
 	OP_LIST_REPLACE: "list.replace",
 
-	OP_STRING_LOAD:    "string.load",
-	OP_STRING_CONCAT:  "string.concat",
-	OP_STRING_SPLIT:   "string.split",
-	OP_STRING_FORMAT:  "string.format",
-	OP_STRING_LENGTH:  "string.length",
-	OP_STRING_PRINT:   "string.print",
-	OP_STRING_PRINTF:  "string.printf",
-	OP_STRING_PRINTLN: "string.println",
+	OP_STRING_LOAD:   "string.load",
+	OP_STRING_CONCAT: "string.concat",
+	OP_STRING_SPLIT:  "string.split",
+	OP_STRING_FORMAT: "string.format",
+	OP_STRING_LENGTH: "string.length",
 
 	OP_TO_STRING: "to_string",
 	OP_TO_BOOL:   "to_bool",
@@ -159,6 +157,10 @@ var instrKindString = map[byte]string{
 	OP_SAVE: "save",
 	OP_POP:  "pop",
 	OP_FREE: "free",
+
+	OP_PRINT:   "print",
+	OP_PRINTF:  "printf",
+	OP_PRINTLN: "println",
 
 	OP_FUNC_CALL: "func.call",
 	OP_FUNC_RET:  "func.ret",
@@ -296,4 +298,16 @@ func ToF32() Instruction {
 
 func ToBool() Instruction {
 	return Instruction{Kind: OP_TO_BOOL}
+}
+
+func Print() Instruction {
+	return Instruction{Kind: OP_PRINT}
+}
+
+func Printf() Instruction {
+	return Instruction{Kind: OP_PRINTF}
+}
+
+func Println() Instruction {
+	return Instruction{Kind: OP_PRINTLN}
 }
