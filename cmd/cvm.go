@@ -17,6 +17,8 @@ func main() {
 		i.Printf(),
 		i.I32Load(3),
 		i.Println(),
+		i.StringLoad("hello, world!\n"),
+		i.Print(),
 		i.Halt(),
 	}
 	for i, inst := range instrs {
