@@ -4,21 +4,19 @@ import (
 	"context"
 	"cvm"
 	i "cvm/instruction"
+	"cvm/object"
 	"fmt"
 )
 
 func main() {
 	instrs := []i.Instruction{
-		i.StringLoad("%. + %. = %.\n"),
-		i.I32Load(12),
+		i.StringLoad("array: %. \n"),
+		i.ListNew(object.TAG_I32),
+		i.I32Load(0),
 		i.I32Load(20),
-		i.I32Load(32),
-		i.I32Load(3),
+		i.ListInsert(),
+		i.I32Load(1),
 		i.Printf(),
-		i.I32Load(3),
-		i.Println(),
-		i.StringLoad("hello, world!\n"),
-		i.Print(),
 		i.Halt(),
 	}
 	for i, inst := range instrs {
