@@ -27,7 +27,7 @@ func AsF32(obj CVMObject) (CVMObject, error) {
 	case TAG_F32:
 		return obj, nil
 	case TAG_I32:
-		val, err := ValueF32(obj)
+		val, err := ValueI32(obj)
 		if err != nil {
 			return CVMObject{}, err
 		}

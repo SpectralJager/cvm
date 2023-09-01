@@ -42,9 +42,3 @@ func F32Geq() Instruction {
 func F32Eq() Instruction {
 	return Instruction{Kind: OP_F32_EQ}
 }
-func F32ToI32() Instruction {
-	return Instruction{Kind: OP_F32_TO_I32}
-}
-func F32ToBool() Instruction {
-	return Instruction{Kind: OP_F32_TO_BOOL}
-}

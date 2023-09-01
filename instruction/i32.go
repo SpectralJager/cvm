@@ -41,9 +41,3 @@ func I32Geq() Instruction {
 func I32Eq() Instruction {
 	return Instruction{Kind: OP_I32_EQ}
 }
-func I32ToF32() Instruction {
-	return Instruction{Kind: OP_I32_TO_F32}
-}
-func I32ToBool() Instruction {
-	return Instruction{Kind: OP_I32_TO_BOOL}
-}

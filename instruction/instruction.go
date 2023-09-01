@@ -22,8 +22,6 @@ const (
 	OP_I32_LEQ
 	OP_I32_GEQ
 	OP_I32_EQ
-	OP_I32_TO_F32
-	OP_I32_TO_BOOL
 
 	OP_BOOL_LOAD
 	OP_BOOL_AND
@@ -44,8 +42,6 @@ const (
 	OP_F32_LEQ
 	OP_F32_GEQ
 	OP_F32_EQ
-	OP_F32_TO_I32
-	OP_F32_TO_BOOL
 
 	OP_LIST_NEW
 	OP_LIST_LENGTH
@@ -56,6 +52,17 @@ const (
 
 	OP_STRING_LOAD
 	OP_STRING_CONCAT
+	OP_STRING_FORMAT
+	OP_STRING_LENGTH
+	OP_STRING_SPLIT
+	OP_STRING_PRINT
+	OP_STRING_PRINTF
+	OP_STRING_PRINTLN
+
+	OP_TO_STRING
+	OP_TO_I32
+	OP_TO_F32
+	OP_TO_BOOL
 
 	OP_JUMP
 	OP_JUMPC
@@ -84,19 +91,17 @@ var instrKindString = map[byte]string{
 	OP_NULL: "null",
 	OP_HALT: "halt",
 
-	OP_I32_LOAD:    "i32.load",
-	OP_I32_NEG:     "i32.neg",
-	OP_I32_ADD:     "i32.add",
-	OP_I32_SUB:     "i32.sub",
-	OP_I32_MUL:     "i32.mul",
-	OP_I32_DIV:     "i32.div",
-	OP_I32_LT:      "i32.lt",
-	OP_I32_GT:      "i32.gt",
-	OP_I32_LEQ:     "i32.leq",
-	OP_I32_GEQ:     "i32.geq",
-	OP_I32_EQ:      "i32.eq",
-	OP_I32_TO_F32:  "i32.to_f32",
-	OP_I32_TO_BOOL: "i32.to_bool",
+	OP_I32_LOAD: "i32.load",
+	OP_I32_NEG:  "i32.neg",
+	OP_I32_ADD:  "i32.add",
+	OP_I32_SUB:  "i32.sub",
+	OP_I32_MUL:  "i32.mul",
+	OP_I32_DIV:  "i32.div",
+	OP_I32_LT:   "i32.lt",
+	OP_I32_GT:   "i32.gt",
+	OP_I32_LEQ:  "i32.leq",
+	OP_I32_GEQ:  "i32.geq",
+	OP_I32_EQ:   "i32.eq",
 
 	OP_BOOL_LOAD: "bool.load",
 	OP_BOOL_NOT:  "bool.not",
@@ -106,19 +111,17 @@ var instrKindString = map[byte]string{
 	OP_BOOL_NOR:  "bool.nor",
 	OP_BOOL_XOR:  "bool.xor",
 
-	OP_F32_LOAD:    "f32.load",
-	OP_F32_NEG:     "f32.neg",
-	OP_F32_ADD:     "f32.add",
-	OP_F32_SUB:     "f32.sub",
-	OP_F32_MUL:     "f32.mul",
-	OP_F32_DIV:     "f32.div",
-	OP_F32_LT:      "f32.lt",
-	OP_F32_GT:      "f32.gt",
-	OP_F32_LEQ:     "f32.leq",
-	OP_F32_GEQ:     "f32.geq",
-	OP_F32_EQ:      "f32.eq",
-	OP_F32_TO_I32:  "f32.to_i32",
-	OP_F32_TO_BOOL: "f32.to_bool",
+	OP_F32_LOAD: "f32.load",
+	OP_F32_NEG:  "f32.neg",
+	OP_F32_ADD:  "f32.add",
+	OP_F32_SUB:  "f32.sub",
+	OP_F32_MUL:  "f32.mul",
+	OP_F32_DIV:  "f32.div",
+	OP_F32_LT:   "f32.lt",
+	OP_F32_GT:   "f32.gt",
+	OP_F32_LEQ:  "f32.leq",
+	OP_F32_GEQ:  "f32.geq",
+	OP_F32_EQ:   "f32.eq",
 
 	OP_LIST_NEW:     "list.new",
 	OP_LIST_LENGTH:  "list.length",
@@ -127,8 +130,19 @@ var instrKindString = map[byte]string{
 	OP_LIST_INSERT:  "list.insert",
 	OP_LIST_REPLACE: "list.replace",
 
-	OP_STRING_LOAD:   "string.load",
-	OP_STRING_CONCAT: "string.concat",
+	OP_STRING_LOAD:    "string.load",
+	OP_STRING_CONCAT:  "string.concat",
+	OP_STRING_SPLIT:   "string.split",
+	OP_STRING_FORMAT:  "string.format",
+	OP_STRING_LENGTH:  "string.length",
+	OP_STRING_PRINT:   "string.print",
+	OP_STRING_PRINTF:  "string.printf",
+	OP_STRING_PRINTLN: "string.println",
+
+	OP_TO_STRING: "to_string",
+	OP_TO_BOOL:   "to_bool",
+	OP_TO_I32:    "to_i32",
+	OP_TO_F32:    "to_f32",
 
 	OP_JUMP:   "jump",
 	OP_JUMPC:  "jumpc",
@@ -266,4 +280,20 @@ func Free(x uint32) Instruction {
 	buf = append(buf, object.TAG_I32)
 	buf = binary.LittleEndian.AppendUint32(buf, uint32(x))
 	return Instruction{Kind: OP_FREE, Operands: buf}
+}
+
+func ToString() Instruction {
+	return Instruction{Kind: OP_TO_STRING}
+}
+
+func ToI32() Instruction {
+	return Instruction{Kind: OP_TO_I32}
+}
+
+func ToF32() Instruction {
+	return Instruction{Kind: OP_TO_F32}
+}
+
+func ToBool() Instruction {
+	return Instruction{Kind: OP_TO_BOOL}
 }

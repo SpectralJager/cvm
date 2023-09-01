@@ -9,6 +9,12 @@ import (
 
 func main() {
 	instrs := []i.Instruction{
+		i.StringLoad("%. + %. = %.\n"),
+		i.I32Load(12),
+		i.I32Load(20),
+		i.I32Load(32),
+		i.I32Load(3),
+		i.StringPrintf(),
 		i.Halt(),
 	}
 	for i, inst := range instrs {

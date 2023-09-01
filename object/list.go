@@ -214,12 +214,15 @@ func InsertList(oldList, ind, obj CVMObject) (CVMObject, error) {
 	if list.Tag != TAG_LIST {
 		return list, fmt.Errorf("expected list, got %s", TagsName(list.Tag))
 	}
+	if list.Data[0] != obj.Tag {
+		return list, fmt.Errorf("expected %s list item, got %s", TagsName(list.Data[0]), TagsName(obj.Tag))
+	}
 	temp, err := ValueI32(ind)
 	if err != nil {
 		return list, err
 	}
 	indVal := int(temp)
-	ln, err := Len(oldList)
+	ln, err := Len(list)
 	if int(ln) < indVal {
 		return list, fmt.Errorf("index %d out of range", indVal)
 	}

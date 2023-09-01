@@ -107,7 +107,7 @@ func (vm *CVM) Pop(ctx context.Context) (object.CVMObject, error) {
 }
 func (vm *CVM) Trace() string {
 	var buf bytes.Buffer
-	fmt.Fprint(&buf, "=== Heap:\n")
+	fmt.Fprint(&buf, "\n=== Heap:\n")
 	for i := 0; i < int(vm.HP); i++ {
 		if vm.Heap[i].Data != nil {
 			str, err := object.String(vm.Heap[i])
@@ -117,7 +117,7 @@ func (vm *CVM) Trace() string {
 			fmt.Fprintf(&buf, "\t$%03d -> %s\n", i, str)
 		}
 	}
-	fmt.Fprint(&buf, "=== StackFrace:\n")
+	fmt.Fprint(&buf, "=== StackFrame:\n")
 	for i := 0; i < int(vm.FP); i++ {
 		fmt.Fprintf(&buf, "\t$%03d -> %s\n", i, vm.StackFrame[i].String())
 	}
@@ -213,20 +213,6 @@ func (vm *CVM) Execute(ctx context.Context, instrs []instruction.Instruction) er
 		case instruction.OP_I32_EQ:
 			ip++
 			resObj, err := BinaryOperation(ctx, vm, object.EqI32)
-			if err != nil {
-				return err
-			}
-			vm.Push(ctx, resObj)
-		case instruction.OP_I32_TO_F32:
-			ip++
-			resObj, err := UnaryOperation(ctx, vm, object.AsF32)
-			if err != nil {
-				return err
-			}
-			vm.Push(ctx, resObj)
-		case instruction.OP_I32_TO_BOOL:
-			ip++
-			resObj, err := UnaryOperation(ctx, vm, object.AsBool)
 			if err != nil {
 				return err
 			}
@@ -353,20 +339,6 @@ func (vm *CVM) Execute(ctx context.Context, instrs []instruction.Instruction) er
 		case instruction.OP_F32_EQ:
 			ip++
 			resObj, err := BinaryOperation(ctx, vm, object.EqF32)
-			if err != nil {
-				return err
-			}
-			vm.Push(ctx, resObj)
-		case instruction.OP_F32_TO_I32:
-			ip++
-			resObj, err := UnaryOperation(ctx, vm, object.AsI32)
-			if err != nil {
-				return err
-			}
-			vm.Push(ctx, resObj)
-		case instruction.OP_F32_TO_BOOL:
-			ip++
-			resObj, err := UnaryOperation(ctx, vm, object.AsBool)
 			if err != nil {
 				return err
 			}
@@ -695,6 +667,66 @@ func (vm *CVM) Execute(ctx context.Context, instrs []instruction.Instruction) er
 		case instruction.OP_STRING_CONCAT:
 			ip++
 			resObj, err := BinaryOperation(ctx, vm, object.ConcatString)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
+		case instruction.OP_STRING_SPLIT:
+			ip++
+			list, err := BinaryOperation(ctx, vm, object.SplitString)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, list)
+		case instruction.OP_STRING_FORMAT:
+			ip++
+			resObj, err := NOperation(ctx, vm, object.FormatString)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
+		case instruction.OP_STRING_PRINT:
+			ip++
+			_, err := UnaryOperation(ctx, vm, object.PrintString)
+			if err != nil {
+				return err
+			}
+		case instruction.OP_STRING_PRINTF:
+			ip++
+			_, err := NOperation(ctx, vm, object.PrintfString)
+			if err != nil {
+				return err
+			}
+		case instruction.OP_STRING_PRINTLN:
+			ip++
+			_, err := UnaryOperation(ctx, vm, object.PrintlnString)
+			if err != nil {
+				return err
+			}
+		case instruction.OP_TO_STRING:
+			ip++
+			resObj, err := UnaryOperation(ctx, vm, object.AsString)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
+		case instruction.OP_TO_I32:
+			ip++
+			resObj, err := UnaryOperation(ctx, vm, object.AsI32)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
+		case instruction.OP_TO_F32:
+			ip++
+			resObj, err := UnaryOperation(ctx, vm, object.AsF32)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
+		case instruction.OP_TO_BOOL:
+			ip++
+			resObj, err := UnaryOperation(ctx, vm, object.AsBool)
 			if err != nil {
 				return err
 			}
