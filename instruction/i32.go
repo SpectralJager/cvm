@@ -41,3 +41,6 @@ func I32Geq() Instruction {
 func I32Eq() Instruction {
 	return Instruction{Kind: OP_I32_EQ}
 }
+func I32Neq() Instruction {
+	return Instruction{Kind: OP_I32_NEQ}
+}

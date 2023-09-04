@@ -10,13 +10,7 @@ import (
 
 func main() {
 	instrs := []i.Instruction{
-		i.StringLoad("array: %. \n"),
-		i.ListNew(object.TAG_I32),
-		i.I32Load(0),
-		i.I32Load(20),
-		i.ListInsert(),
-		i.I32Load(1),
-		i.Printf(),
+		i.StructLoad(object.TAG_I32, object.TAG_STRING),
 		i.Halt(),
 	}
 	for i, inst := range instrs {

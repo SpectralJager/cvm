@@ -164,3 +164,15 @@ func EqI32(obj1, obj2 CVMObject) (CVMObject, error) {
 	}
 	return CreateBool(v1 == v2)
 }
+
+func NeqI32(obj1, obj2 CVMObject) (CVMObject, error) {
+	v1, err := ValueI32(obj1)
+	if err != nil {
+		return CVMObject{}, err
+	}
+	v2, err := ValueI32(obj2)
+	if err != nil {
+		return CVMObject{}, err
+	}
+	return CreateBool(v1 != v2)
+}

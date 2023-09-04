@@ -162,3 +162,15 @@ func EqF32(obj1, obj2 CVMObject) (CVMObject, error) {
 	}
 	return CreateBool(v1 == v2)
 }
+
+func NeqF32(obj1, obj2 CVMObject) (CVMObject, error) {
+	v1, err := ValueF32(obj1)
+	if err != nil {
+		return CVMObject{}, err
+	}
+	v2, err := ValueF32(obj2)
+	if err != nil {
+		return CVMObject{}, err
+	}
+	return CreateBool(v1 != v2)
+}

@@ -22,6 +22,7 @@ const (
 	OP_I32_LEQ
 	OP_I32_GEQ
 	OP_I32_EQ
+	OP_I32_NEQ
 
 	OP_BOOL_LOAD
 	OP_BOOL_AND
@@ -42,6 +43,7 @@ const (
 	OP_F32_LEQ
 	OP_F32_GEQ
 	OP_F32_EQ
+	OP_F32_NEQ
 
 	OP_LIST_NEW
 	OP_LIST_LENGTH
@@ -55,6 +57,8 @@ const (
 	OP_STRING_FORMAT
 	OP_STRING_LENGTH
 	OP_STRING_SPLIT
+
+	OP_STRUCT_LOAD
 
 	OP_TO_STRING
 	OP_TO_I32
@@ -80,6 +84,7 @@ const (
 	OP_PRINT
 	OP_PRINTF
 	OP_PRINTLN
+	OP_READ
 
 	OP_FUNC_CALL
 	OP_FUNC_RET
@@ -103,6 +108,7 @@ var instrKindString = map[byte]string{
 	OP_I32_LEQ:  "i32.leq",
 	OP_I32_GEQ:  "i32.geq",
 	OP_I32_EQ:   "i32.eq",
+	OP_I32_NEQ:  "i32.neq",
 
 	OP_BOOL_LOAD: "bool.load",
 	OP_BOOL_NOT:  "bool.not",
@@ -123,6 +129,7 @@ var instrKindString = map[byte]string{
 	OP_F32_LEQ:  "f32.leq",
 	OP_F32_GEQ:  "f32.geq",
 	OP_F32_EQ:   "f32.eq",
+	OP_F32_NEQ:  "f32.neq",
 
 	OP_LIST_NEW:     "list.new",
 	OP_LIST_LENGTH:  "list.length",
@@ -136,6 +143,8 @@ var instrKindString = map[byte]string{
 	OP_STRING_SPLIT:  "string.split",
 	OP_STRING_FORMAT: "string.format",
 	OP_STRING_LENGTH: "string.length",
+
+	OP_STRUCT_LOAD: "struct.load",
 
 	OP_TO_STRING: "to_string",
 	OP_TO_BOOL:   "to_bool",
@@ -161,6 +170,7 @@ var instrKindString = map[byte]string{
 	OP_PRINT:   "print",
 	OP_PRINTF:  "printf",
 	OP_PRINTLN: "println",
+	OP_READ:    "read",
 
 	OP_FUNC_CALL: "func.call",
 	OP_FUNC_RET:  "func.ret",
@@ -178,7 +188,7 @@ func (i *Instruction) String() string {
 	var buf bytes.Buffer
 	fmt.Fprintf(&buf, "%-12s", instrKindString[i.Kind])
 	switch i.Kind {
-	case OP_I32_LOAD, OP_F32_LOAD, OP_BOOL_LOAD, OP_STRING_LOAD:
+	case OP_I32_LOAD, OP_F32_LOAD, OP_BOOL_LOAD, OP_STRING_LOAD, OP_STRUCT_LOAD:
 		obj, err := object.CreateObject(i.Operands)
 		if err != nil {
 			panic(err)
@@ -310,4 +320,8 @@ func Printf() Instruction {
 
 func Println() Instruction {
 	return Instruction{Kind: OP_PRINTLN}
+}
+
+func Read() Instruction {
+	return Instruction{Kind: OP_READ}
 }

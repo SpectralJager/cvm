@@ -1,6 +1,7 @@
 package object
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 )
@@ -12,6 +13,7 @@ const (
 
 	TAG_LIST   // tag.elemTag.len.data...
 	TAG_STRING // tag.len.data...
+	TAG_STRUCT // tag.len.{fieldTags}...{data}...
 )
 
 type CVMObject struct {
@@ -31,6 +33,8 @@ func String(obj CVMObject) (string, error) {
 		return StringList(obj)
 	case TAG_STRING:
 		return StringString(obj)
+	case TAG_STRUCT:
+		return StringStruct(obj)
 	default:
 		return fmt.Sprintf("(unknown)%v", obj.Data), nil
 	}
@@ -44,6 +48,8 @@ func Value(obj CVMObject) (any, error) {
 		return ValueF32(obj)
 	case TAG_BOOL:
 		return ValueBool(obj)
+	case TAG_STRING:
+		return ValueString(obj)
 	default:
 		return nil, fmt.Errorf("can't get value for tag %v", TagsName(obj.Tag))
 	}
@@ -74,7 +80,7 @@ func CreateObject(val []byte) (CVMObject, error) {
 	var obj CVMObject
 	obj.Data = nil
 	switch val[0] {
-	case TAG_I32, TAG_F32, TAG_BOOL, TAG_STRING, TAG_LIST:
+	case TAG_I32, TAG_F32, TAG_BOOL, TAG_STRING, TAG_LIST, TAG_STRUCT:
 		obj.Tag = val[0]
 		obj.Data = val[1:]
 	default:
@@ -83,28 +89,19 @@ func CreateObject(val []byte) (CVMObject, error) {
 	return obj, nil
 }
 
-func CreateTarget(target byte, Data any) (CVMObject, error) {
+func CreateDefault(target byte) (CVMObject, error) {
 	switch target {
 	case TAG_I32:
-		if val, ok := Data.(int32); ok {
-			return CreateI32(val)
-		}
+		return CreateI32(0)
 	case TAG_F32:
-		if val, ok := Data.(float32); ok {
-			return CreateF32(val)
-		}
+		return CreateF32(0.0)
 	case TAG_BOOL:
-		if val, ok := Data.(bool); ok {
-			return CreateBool(val)
-		}
+		return CreateBool(false)
 	case TAG_STRING:
-		if val, ok := Data.(string); ok {
-			return CreateString(val)
-		}
+		return CreateString("")
 	default:
 		return CVMObject{}, fmt.Errorf("cant create object with target %s", TagsName(target))
 	}
-	return CVMObject{}, fmt.Errorf("Data %v is not an %s", Data, TagsName(target))
 }
 
 func Len(obj CVMObject) (int, error) {
@@ -116,7 +113,7 @@ func Len(obj CVMObject) (int, error) {
 		}
 		val, err := ValueI32(l)
 		return int(val), err
-	case TAG_STRING:
+	case TAG_STRING, TAG_STRUCT:
 		l, err := CreateObject(obj.Data[:5])
 		if err != nil {
 			return 0, err
@@ -219,4 +216,13 @@ func Println(obj CVMObject) (CVMObject, error) {
 	}
 	fmt.Fprintln(os.Stdout, resV)
 	return CVMObject{}, nil
+}
+
+func Read() (CVMObject, error) {
+	res, err := bufio.NewReader(os.Stdin).ReadString('\n')
+	if err != nil {
+		return CVMObject{}, err
+	}
+	resObj, err := CreateString(res)
+	return resObj, err
 }

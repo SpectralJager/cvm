@@ -217,6 +217,13 @@ func (vm *CVM) Execute(ctx context.Context, instrs []instruction.Instruction) er
 				return err
 			}
 			vm.Push(ctx, resObj)
+		case instruction.OP_I32_NEQ:
+			ip++
+			resObj, err := BinaryOperation(ctx, vm, object.NeqI32)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
 		case instruction.OP_BOOL_LOAD:
 			ip++
 			obj, err := object.CreateObject(instr.Operands)
@@ -339,6 +346,13 @@ func (vm *CVM) Execute(ctx context.Context, instrs []instruction.Instruction) er
 		case instruction.OP_F32_EQ:
 			ip++
 			resObj, err := BinaryOperation(ctx, vm, object.EqF32)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
+		case instruction.OP_F32_NEQ:
+			ip++
+			resObj, err := BinaryOperation(ctx, vm, object.NeqF32)
 			if err != nil {
 				return err
 			}
@@ -685,6 +699,13 @@ func (vm *CVM) Execute(ctx context.Context, instrs []instruction.Instruction) er
 				return err
 			}
 			vm.Push(ctx, resObj)
+		case instruction.OP_STRUCT_LOAD:
+			ip++
+			resObj, err := object.CreateStruct(instr.Operands)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
 		case instruction.OP_TO_STRING:
 			ip++
 			resObj, err := UnaryOperation(ctx, vm, object.AsString)
@@ -731,6 +752,13 @@ func (vm *CVM) Execute(ctx context.Context, instrs []instruction.Instruction) er
 			if err != nil {
 				return err
 			}
+		case instruction.OP_READ:
+			ip++
+			resObj, err := object.Read()
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
 		default:
 			return fmt.Errorf("unknown instruction of kind 0x%02x", instr.Kind)
 		}

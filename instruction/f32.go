@@ -42,3 +42,6 @@ func F32Geq() Instruction {
 func F32Eq() Instruction {
 	return Instruction{Kind: OP_F32_EQ}
 }
+func F32Neq() Instruction {
+	return Instruction{Kind: OP_F32_NEQ}
+}
