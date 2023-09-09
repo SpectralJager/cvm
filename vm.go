@@ -699,9 +699,23 @@ func (vm *CVM) Execute(ctx context.Context, instrs []instruction.Instruction) er
 				return err
 			}
 			vm.Push(ctx, resObj)
-		case instruction.OP_STRUCT_LOAD:
+		case instruction.OP_STRUCT_NEW:
 			ip++
 			resObj, err := object.CreateStruct(instr.Operands)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
+		case instruction.OP_STRUCT_GET:
+			ip++
+			resObj, err := BinaryOperation(ctx, vm, object.GetStruct)
+			if err != nil {
+				return err
+			}
+			vm.Push(ctx, resObj)
+		case instruction.OP_STRUCT_SET:
+			ip++
+			resObj, err := TernaryOperation(ctx, vm, object.SetStruct)
 			if err != nil {
 				return err
 			}

@@ -10,7 +10,9 @@ import (
 
 func main() {
 	instrs := []i.Instruction{
-		i.StructLoad(object.TAG_I32, object.TAG_STRING),
+		i.StructNew(object.TAG_I32, object.TAG_LIST),
+		i.I32Load(1),
+		i.StructGet(),
 		i.Halt(),
 	}
 	for i, inst := range instrs {

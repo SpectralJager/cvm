@@ -2,11 +2,18 @@ package object
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 )
 
 // constructor
 func CreateList(val []byte) (CVMObject, error) {
+	if val == nil {
+		val = make([]byte, 0, 6)
+		val = append(val, TAG_UNDEFINED)
+		val = append(val, TAG_I32)
+		val = binary.LittleEndian.AppendUint32(val, 0)
+	}
 	list := CVMObject{
 		Tag:  TAG_LIST,
 		Data: make([]byte, len(val)),
@@ -48,7 +55,7 @@ func StringList(obj CVMObject) (string, error) {
 			if err != nil {
 				return buf.String(), err
 			}
-		case TAG_STRING:
+		case TAG_STRING, TAG_LIST:
 			s, err = Size(CVMObject{Tag: obj.Data[i], Data: obj.Data[i+1 : i+6]})
 			if err != nil {
 				return buf.String(), err
@@ -61,12 +68,6 @@ func StringList(obj CVMObject) (string, error) {
 			if err != nil {
 				return buf.String(), err
 			}
-		// case TAG_LIST:
-		// 	s, err = Size(CVMObject{Tag: obj.Data[i], Data: obj.Data[i+1 : i+7]})
-		// 	if err != nil {
-		// 		return buf.String(), err
-		// 	}
-		// 	str, err = StringList(CVMObject{Tag: obj.Data[i]})
 		default:
 			return buf.String(), fmt.Errorf("unexpected list item tag %s", TagsName(obj.Data[i]))
 		}
@@ -120,11 +121,7 @@ func GetList(list, ind CVMObject) (CVMObject, error) {
 	if ln <= indVal {
 		return obj, fmt.Errorf("index %d out of range", indVal)
 	}
-	prefSize := 6
-	if err != nil {
-		return list, err
-	}
-	offStart := prefSize
+	offStart := 6
 	offEnd := 0
 	switch list.Data[0] {
 	case TAG_BOOL, TAG_F32, TAG_I32:
@@ -138,6 +135,18 @@ func GetList(list, ind CVMObject) (CVMObject, error) {
 		size := 0
 		for i := 0; i < indVal+1; i++ {
 			s, err := Size(CVMObject{Tag: TAG_STRING, Data: list.Data[offStart+1 : offStart+5]})
+			if err != nil {
+				return list, err
+			}
+			offStart += s
+			size = s
+		}
+		offEnd = offStart
+		offStart -= size
+	case TAG_LIST:
+		size := 0
+		for i := 0; i < indVal+1; i++ {
+			s, err := Size(CVMObject{Tag: TAG_LIST, Data: list.Data[offStart+1 : offStart+7]})
 			if err != nil {
 				return list, err
 			}
@@ -174,11 +183,7 @@ func RemoveList(oldList, ind CVMObject) (CVMObject, error) {
 	if ln <= indVal {
 		return list, fmt.Errorf("index %d out of range", indVal)
 	}
-	prefSize := 6
-	if err != nil {
-		return list, err
-	}
-	offStart := prefSize
+	offStart := 6
 	offEnd := 0
 	switch list.Data[0] {
 	case TAG_BOOL, TAG_F32, TAG_I32:
@@ -192,6 +197,18 @@ func RemoveList(oldList, ind CVMObject) (CVMObject, error) {
 		size := 0
 		for i := 0; i < indVal+1; i++ {
 			s, err := Size(CVMObject{Tag: TAG_STRING, Data: list.Data[offStart+1 : offStart+5]})
+			if err != nil {
+				return list, err
+			}
+			offStart += s
+			size = s
+		}
+		offEnd = offStart
+		offStart -= size
+	case TAG_LIST:
+		size := 0
+		for i := 0; i < indVal+1; i++ {
+			s, err := Size(CVMObject{Tag: TAG_LIST, Data: list.Data[offStart+1 : offStart+7]})
 			if err != nil {
 				return list, err
 			}
@@ -230,18 +247,25 @@ func InsertList(oldList, ind, obj CVMObject) (CVMObject, error) {
 	if err != nil {
 		return list, err
 	}
-	prefSize := 6
-	offStart := prefSize
+	offStart := 6
 	switch list.Data[0] {
 	case TAG_BOOL, TAG_F32, TAG_I32:
 		offStart += indVal * size
 	case TAG_STRING:
 		for i := 0; i < indVal; i++ {
-			l, err := Len(CVMObject{Tag: TAG_STRING, Data: list.Data[offStart+1 : offStart+5]})
+			s, err := Size(CVMObject{Tag: TAG_STRING, Data: list.Data[offStart+1 : offStart+5]})
 			if err != nil {
 				return list, err
 			}
-			offStart += 6 + l
+			offStart += s
+		}
+	case TAG_LIST:
+		for i := 0; i < indVal; i++ {
+			s, err := Size(CVMObject{Tag: TAG_LIST, Data: list.Data[offStart+1 : offStart+7]})
+			if err != nil {
+				return list, err
+			}
+			offStart += s
 		}
 	}
 	list.Data = append(list.Data[:offStart], append(Bytes(obj), list.Data[offStart:]...)...)

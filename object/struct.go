@@ -16,18 +16,6 @@ func CreateStruct(data []byte) (CVMObject, error) {
 	}
 	obj.Data = make([]byte, len(data[1:]))
 	copy(obj.Data, data[1:])
-	lV, err := Len(obj)
-	if err != nil {
-		return obj, err
-	}
-	for i := 5; i < lV+5; i++ {
-		tg := obj.Data[i]
-		o, err := CreateDefault(tg)
-		if err != nil {
-			return obj, err
-		}
-		obj.Data = append(obj.Data, Bytes(o)...)
-	}
 	return obj, nil
 }
 
@@ -64,7 +52,7 @@ func StringStruct(obj CVMObject) (string, error) {
 			}
 			fmt.Fprintf(&buf, "%s ", tS)
 			i += s
-		case TAG_STRING:
+		case TAG_STRING, TAG_LIST:
 			s, err := Size(CVMObject{Tag: obj.Data[i], Data: obj.Data[i+1 : i+6]})
 			if err != nil {
 				return buf.String(), err
@@ -85,4 +73,69 @@ func StringStruct(obj CVMObject) (string, error) {
 	}
 	fmt.Fprint(&buf, "}")
 	return buf.String(), nil
+}
+
+// actions
+
+func GetStruct(strct, ind CVMObject) (CVMObject, error) {
+	var obj CVMObject
+	if strct.Tag != TAG_STRUCT {
+		return obj, fmt.Errorf("expected struct, got %s", TagsName(strct.Tag))
+	}
+	temp, err := ValueI32(ind)
+	if err != nil {
+		return obj, err
+	}
+	indVal := int(temp)
+	ln, err := Len(strct)
+	if err != nil {
+		return obj, err
+	}
+	if ln <= 0 {
+		return obj, fmt.Errorf("struct is empty")
+	}
+	if ln <= indVal {
+		return obj, fmt.Errorf("index %d out of range", indVal)
+	}
+	offStart := 5 + ln
+	offEnd := 0
+	switch strct.Data[offStart] {
+	case TAG_BOOL, TAG_F32, TAG_I32:
+		size, err := Size(CVMObject{Tag: strct.Data[0]})
+		if err != nil {
+			return strct, err
+		}
+		offStart += indVal * size
+		offEnd = offStart + size
+	case TAG_STRING:
+		size := 0
+		for i := 0; i < indVal+1; i++ {
+			s, err := Size(CVMObject{Tag: TAG_STRING, Data: strct.Data[offStart+1 : offStart+5]})
+			if err != nil {
+				return strct, err
+			}
+			offStart += s
+			size = s
+		}
+		offEnd = offStart
+		offStart -= size
+	case TAG_LIST:
+		size := 0
+		for i := 0; i < indVal+1; i++ {
+			s, err := Size(CVMObject{Tag: TAG_LIST, Data: strct.Data[offStart+1 : offStart+7]})
+			if err != nil {
+				return strct, err
+			}
+			offStart += s
+			size = s
+		}
+		offEnd = offStart
+		offStart -= size
+	}
+	obj, err = CreateObject(strct.Data[offStart:offEnd])
+	return obj, err
+}
+
+func SetStruct(oldStruct, ind, obj CVMObject) (CVMObject, error) {
+	return oldStruct, nil
 }

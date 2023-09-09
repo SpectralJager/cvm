@@ -2,7 +2,7 @@ package instruction
 
 import "cvm/object"
 
-func StructLoad(tags ...byte) Instruction {
+func StructNew(tags ...byte) Instruction {
 	lO, err := object.CreateI32(int32(len(tags)))
 	if err != nil {
 		panic(err)
@@ -10,5 +10,20 @@ func StructLoad(tags ...byte) Instruction {
 	buf := []byte{object.TAG_STRUCT}
 	buf = append(buf, object.Bytes(lO)...)
 	buf = append(buf, tags...)
-	return Instruction{Kind: OP_STRUCT_LOAD, Operands: buf}
+	for _, tag := range tags {
+		obj, err := object.CreateDefault(tag)
+		if err != nil {
+			panic(err)
+		}
+		buf = append(buf, object.Bytes(obj)...)
+	}
+	return Instruction{Kind: OP_STRUCT_NEW, Operands: buf}
+}
+
+func StructGet() Instruction {
+	return Instruction{Kind: OP_STRUCT_GET}
+}
+
+func StructSet() Instruction {
+	return Instruction{Kind: OP_STRUCT_SET}
 }

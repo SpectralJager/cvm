@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	TAG_I32 byte = iota // tag.data
+	TAG_UNDEFINED byte = iota // tag.data
+	TAG_I32                   // tag.data
 	TAG_BOOL
 	TAG_F32
 
@@ -57,6 +58,8 @@ func Value(obj CVMObject) (any, error) {
 
 func TagsName(tag byte) string {
 	switch tag {
+	case TAG_UNDEFINED:
+		return "undefined"
 	case TAG_I32:
 		return "i32"
 	case TAG_F32:
@@ -99,6 +102,8 @@ func CreateDefault(target byte) (CVMObject, error) {
 		return CreateBool(false)
 	case TAG_STRING:
 		return CreateString("")
+	case TAG_LIST:
+		return CreateList(nil)
 	default:
 		return CVMObject{}, fmt.Errorf("cant create object with target %s", TagsName(target))
 	}
@@ -127,6 +132,8 @@ func Len(obj CVMObject) (int, error) {
 
 func Size(obj CVMObject) (int, error) {
 	switch obj.Tag {
+	case TAG_UNDEFINED:
+		return 0, nil
 	case TAG_I32:
 		return 5, nil
 	case TAG_F32:
@@ -146,6 +153,8 @@ func Size(obj CVMObject) (int, error) {
 		}
 		itemSize := 0
 		switch obj.Data[0] {
+		case TAG_UNDEFINED:
+			return 7, nil
 		case TAG_I32, TAG_BOOL, TAG_F32:
 			itemSize, err = Size(CVMObject{Tag: obj.Data[0]})
 			if err != nil {
@@ -153,6 +162,16 @@ func Size(obj CVMObject) (int, error) {
 			}
 			return l*itemSize + 7, nil
 		case TAG_STRING:
+			for i := 6; i < len(obj.Data); {
+				s, err := Size(CVMObject{Tag: obj.Data[i], Data: obj.Data[i+1 : i+6]})
+				if err != nil {
+					return 0, err
+				}
+				i += s
+				itemSize += s
+			}
+			return itemSize + 7, nil
+		case TAG_LIST:
 			for i := 6; i < len(obj.Data); {
 				s, err := Size(CVMObject{Tag: obj.Data[i], Data: obj.Data[i+1 : i+6]})
 				if err != nil {

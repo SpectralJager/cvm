@@ -58,7 +58,9 @@ const (
 	OP_STRING_LENGTH
 	OP_STRING_SPLIT
 
-	OP_STRUCT_LOAD
+	OP_STRUCT_NEW
+	OP_STRUCT_GET
+	OP_STRUCT_SET
 
 	OP_TO_STRING
 	OP_TO_I32
@@ -144,7 +146,9 @@ var instrKindString = map[byte]string{
 	OP_STRING_FORMAT: "string.format",
 	OP_STRING_LENGTH: "string.length",
 
-	OP_STRUCT_LOAD: "struct.load",
+	OP_STRUCT_NEW: "struct.new",
+	OP_STRUCT_GET: "struct.get",
+	OP_STRUCT_SET: "struct.set",
 
 	OP_TO_STRING: "to_string",
 	OP_TO_BOOL:   "to_bool",
@@ -188,7 +192,7 @@ func (i *Instruction) String() string {
 	var buf bytes.Buffer
 	fmt.Fprintf(&buf, "%-12s", instrKindString[i.Kind])
 	switch i.Kind {
-	case OP_I32_LOAD, OP_F32_LOAD, OP_BOOL_LOAD, OP_STRING_LOAD, OP_STRUCT_LOAD:
+	case OP_I32_LOAD, OP_F32_LOAD, OP_BOOL_LOAD, OP_STRING_LOAD, OP_LIST_NEW, OP_STRUCT_NEW:
 		obj, err := object.CreateObject(i.Operands)
 		if err != nil {
 			panic(err)
